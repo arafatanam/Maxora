@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, ScrollView, Pressable, Text, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, ScrollView, Pressable, Text, KeyboardAvoidingView, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { sb, api } from './src/api';
+import { sb, api, API_URL } from './src/api';
 import { initPurchases } from './src/purchases';
 import { T, Card, Btn, Gauge, Bar, C } from './src/ui';
 import Onboard from './src/screens/Onboard';
@@ -17,7 +17,7 @@ import Settings from './src/screens/Settings';
 const TABS = [['home', 'Home'], ['scan', 'Scan'], ['plan', 'Plan'], ['coach', 'Coach'], ['settings', 'Profile']];
 
 function Shell() {
-  const [sess, setSess] = useState(undefined), [me, setMe] = useState(null), [v, setV] = useState('boot'), [scan, setScan] = useState(null), [files, setFiles] = useState(null), [from, setFrom] = useState('home'), [guestError, setGuestError] = useState('');
+  const [sess, setSess] = useState(undefined), [me, setMe] = useState(null), [v, setV] = useState('boot'), [scan, setScan] = useState(null), [files, setFiles] = useState(null), [from, setFrom] = useState('home'), [guestError, setGuestError] = useState(''), [loadError, setLoadError] = useState('');
   const sc = useRef(), ins = useSafeAreaInsets();
   const startGuestSession = useCallback(async () => {
     setGuestError('');
@@ -39,13 +39,18 @@ function Shell() {
     return () => l.subscription.unsubscribe();
   }, [startGuestSession]);
   const load = useCallback(async next => {
-    const m = await api('me'); setMe(m);
-    const r = await api('scan'); setScan(r.scan);
+    setLoadError('');
+    const [m, r] = await Promise.all([api('me'), api('scan')]);
+    setMe(m); setScan(r.scan);
     setV(x => !m.profile?.onboarded ? 'welcome' : (x === 'boot' || x === 'welcome') ? (next || 'home') : (next || x));
   }, []);
   useEffect(() => {
-    if (sess) { initPurchases(sess.user.id); load().catch(e => Alert.alert('Connection problem', e.message)); }
-    else if (sess === null) { setMe(null); setV('boot'); }
+    if (sess) {
+      setMe(null); setScan(null);
+      initPurchases(sess.user.id);
+      load().catch(e => setLoadError(e.message));
+    }
+    else if (sess === null) { setMe(null); setScan(null); setLoadError(''); setV('boot'); }
   }, [sess]);
   const open = async id => { const r = await api('scan?id=' + id); setScan(r.scan); setV('results'); };
   const go = (to, f) => { if (to === 'analyzing') setFiles(f); if (to === 'paywall') setFrom(v); setV(to); };
@@ -54,6 +59,13 @@ function Shell() {
     if (sess === undefined) return guestError
       ? <View style={{ marginTop: 60 }}><T k="h1">Guest access unavailable</T><T k="err">{guestError}</T><Btn onPress={startGuestSession}>Try again</Btn></View>
       : <T k="g" style={{ marginTop: 60 }}>Starting guest session...</T>;
+    if (loadError) return <View style={{ marginTop: 60 }}>
+      <T k="h1">Can't connect to Facet AI</T>
+      <T k="err">{loadError}</T>
+      <T k="g">Backend address: {API_URL}</T>
+      <T k="g">Check that the backend is running and your iPhone can reach this address on the same Wi-Fi network, then retry.</T>
+      <Btn onPress={() => load().catch(e => setLoadError(e.message))}>Retry connection</Btn>
+    </View>;
     if (!me) return <T k="g" style={{ marginTop: 60 }}>Loading...</T>;
     if (v === 'welcome') return <Onboard done={() => load('scan')} />;
     if (v === 'paywall') return <Paywall me={me} back={() => setV(from === 'paywall' ? 'home' : from)} done={() => load(from === 'paywall' ? 'home' : from)} />;

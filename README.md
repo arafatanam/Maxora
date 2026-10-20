@@ -54,6 +54,15 @@ npx expo start
 
 Open the QR code with Expo Go on a phone connected to the same Wi-Fi network. For a deployed backend, set `EXPO_PUBLIC_API_URL` to its HTTPS URL instead.
 
+For phone testing on Windows, start the backend so it listens on the network interface:
+
+```powershell
+Set-Location backend
+npm run dev -- --hostname 0.0.0.0
+```
+
+Allow inbound TCP port 3000 only from your local Wi-Fi subnet in Windows Firewall (or use a deployed HTTPS backend). A Public Wi-Fi profile blocks inbound connections by default. If the app cannot connect, it displays the configured backend URL and a retry button.
+
 ### 4. Build and release
 
 See [`mobile/eas.json`](./mobile/eas.json) for build profiles. Install and sign in to EAS CLI, then use `eas build --platform android --profile preview` for an Android test build or `eas build --platform all --profile production` for production builds. Update the app identifier in [`mobile/app.json`](./mobile/app.json) before publishing.
