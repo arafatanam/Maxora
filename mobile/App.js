@@ -1,5 +1,8 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, ScrollView, Pressable, Text, KeyboardAvoidingView, Platform } from 'react-native';
+import { useFonts } from 'expo-font';
+import { IBMPlexSans_400Regular, IBMPlexSans_600SemiBold } from '@expo-google-fonts/ibm-plex-sans';
+import { IBMPlexSerif_400Regular, IBMPlexSerif_700Bold } from '@expo-google-fonts/ibm-plex-serif';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { sb, api, API_URL } from './src/api';
@@ -17,6 +20,7 @@ import Settings from './src/screens/Settings';
 const TABS = [['home', 'Home'], ['scan', 'Scan'], ['plan', 'Plan'], ['coach', 'Coach'], ['settings', 'Profile']];
 
 function Shell() {
+  const [fontsLoaded] = useFonts({ IBMPlexSans_400Regular, IBMPlexSans_600SemiBold, IBMPlexSerif_400Regular, IBMPlexSerif_700Bold });
   const [sess, setSess] = useState(undefined), [me, setMe] = useState(null), [v, setV] = useState('boot'), [scan, setScan] = useState(null), [files, setFiles] = useState(null), [from, setFrom] = useState('home'), [guestError, setGuestError] = useState(''), [loadError, setLoadError] = useState('');
   const sc = useRef(), ins = useSafeAreaInsets();
   const startGuestSession = useCallback(async () => {
@@ -56,11 +60,12 @@ function Shell() {
   const go = (to, f) => { if (to === 'analyzing') setFiles(f); if (to === 'paywall') setFrom(v); setV(to); };
   const tab = t => { setV(t); if (t === 'plan' || t === 'results') api('scan').then(r => setScan(r.scan)).catch(() => {}); };
   const body = () => {
+    if (!fontsLoaded) return null;
     if (sess === undefined) return guestError
       ? <View style={{ marginTop: 60 }}><T k="h1">Guest access unavailable</T><T k="err">{guestError}</T><Btn onPress={startGuestSession}>Try again</Btn></View>
       : <T k="g" style={{ marginTop: 60 }}>Starting guest session...</T>;
     if (loadError) return <View style={{ marginTop: 60 }}>
-      <T k="h1">Can't connect to Facet AI</T>
+      <T k="h1">Can't connect to Maxora</T>
       <T k="err">{loadError}</T>
       <T k="g">Backend address: {API_URL}</T>
       <T k="g">Check that the backend is running and your iPhone can reach this address on the same Wi-Fi network, then retry.</T>
@@ -88,8 +93,8 @@ function Shell() {
   const showTabs = sess && me && !['welcome', 'paywall', 'analyzing', 'boot'].includes(v);
   return <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-      <ScrollView ref={sc} contentContainerStyle={{ padding: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">{body()}</ScrollView>
-      {showTabs && <View style={{ flexDirection: 'row', backgroundColor: '#101018', borderTopWidth: 1, borderTopColor: '#22222e', paddingBottom: ins.bottom }}>
+      <ScrollView ref={sc} contentContainerStyle={{ padding: 16, paddingTop: 28, paddingBottom: 40, flexGrow: 1, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">{body()}</ScrollView>
+      {showTabs &&       <View style={{ flexDirection: 'row', backgroundColor: C.card, borderTopWidth: 1, borderTopColor: C.line, paddingBottom: ins.bottom }}>
         {TABS.map(([k, l]) => <Pressable key={k} onPress={() => tab(k)} accessibilityRole="tab" style={{ flex: 1, paddingVertical: 14, alignItems: 'center' }}>
           <Text style={{ color: v === k ? C.c : C.g, fontWeight: v === k ? '700' : '400', fontSize: 13 }}>{l}</Text></Pressable>)}
       </View>}

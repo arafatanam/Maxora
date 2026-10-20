@@ -12,8 +12,8 @@ export default function Auth() {
     else if (up) { const r = await sb.auth.signInWithPassword({ email: em.trim(), password: pw }); if (r.error) setErr('Check your email to confirm, then sign in.'); }
     setBusy(false);
   };
-  return <View style={{ marginTop: 60 }}>
-    <T k="h1">Facet AI</T><T k="g" style={{ marginBottom: 16 }}>See your face. Fix what matters.</T>
+  return <View style={{ justifyContent: 'center', flex: 1 }}>
+    <T k="h1">Maxora</T><T k="g" style={{ marginBottom: 16 }}>See your face. Fix what matters.</T>
     <Card>
       <TextInput style={input} placeholder="Email" placeholderTextColor={C.g} autoCapitalize="none" keyboardType="email-address" value={em} onChangeText={setEm} />
       <TextInput style={input} placeholder="Password (8+ characters)" placeholderTextColor={C.g} secureTextEntry value={pw} onChangeText={setPw} />

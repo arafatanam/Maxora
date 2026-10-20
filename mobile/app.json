@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "Facet AI",
-    "slug": "facet-ai",
-    "scheme": "facetai",
+    "name": "Maxora",
+    "slug": "maxora",
+    "scheme": "maxora",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#0B0B10",
+    "backgroundColor": "#080A0D",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -20,8 +20,8 @@
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
-        "NSCameraUsageDescription": "Facet AI uses your camera to take the front and side photos for your face rating.",
-        "NSPhotoLibraryUsageDescription": "Facet AI reads photos you pick so it can rate your face."
+        "NSCameraUsageDescription": "Maxora uses your camera to take the front and side photos for your face rating.",
+        "NSPhotoLibraryUsageDescription": "Maxora reads photos you pick so it can rate your face."
       }
     },
     "android": {
@@ -43,8 +43,8 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Facet AI uses your camera to take the front and side photos for your face rating.",
-          "photosPermission": "Facet AI reads photos you pick so it can rate your face."
+          "cameraPermission": "Maxora uses your camera to take the front and side photos for your face rating.",
+          "photosPermission": "Maxora reads photos you pick so it can rate your face."
         }
       ],
       "expo-sharing",

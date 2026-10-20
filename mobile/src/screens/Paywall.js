@@ -20,9 +20,9 @@ export default function Paywall({ me, back, done }) {
     } catch (e) { if (!e.userCancelled) setErr(e.message); setBusy(false); }
   };
   return <View>
-    <T k="h1">Unlock your full face report.</T>
+    <T k="h1">View all insights.</T>
     <Card style={{ opacity: 0.35 }}><T k="h3">Jawline 7.2</T><Bar v={7.2} /><T k="h3" style={{ marginTop: 10 }}>Eye area 6.1</T><Bar v={6.1} /></Card>
-    <Card>{BENEFITS.map(x => <T key={x}>+ {x}</T>)}</Card>
+    <Card>{BENEFITS.map(x => <T key={x} style={{ marginVertical: 3 }}>• {x}</T>)}</Card>
     {me.test ? <>
       <Opt on={plan === 'weekly_trial'} onPress={() => setPlan('weekly_trial')}>3-day trial, then $4.99 per week</Opt>
       <Opt on={plan === 'weekly'} onPress={() => setPlan('weekly')}>$6.99 per week, no trial</Opt>

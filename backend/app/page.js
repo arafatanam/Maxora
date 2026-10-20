@@ -46,7 +46,7 @@ function Auth() {
     setBusy(false);
   };
   return <div>
-    <h1 style={{ marginTop: 60 }}>Facet AI</h1>
+    <h1 style={{ marginTop: 60 }}>Maxora</h1>
     <p>See your face. Fix what matters.</p>
     <div className="card">
       <input type="email" placeholder="Email" value={em} onChange={e => setEm(e.target.value)} aria-label="Email" />
@@ -64,7 +64,7 @@ function Onboard({ done }) {
   const Q = [['gender', 'Gender', ['male', 'female', 'other']], ['age_range', 'Age range', ['18 to 24', '25 to 34', '35 to 44', '45 plus']], ['main_goal', 'Main goal', ['Better jawline', 'Better skin', 'Better hair', 'Overall glow up', 'Social confidence']]];
   if (step < 3) return <div style={{ marginTop: 60 }}><h1>{slides[step][0]}</h1><p style={{ margin: '12px 0 24px' }}>{slides[step][1]}</p><button className="btn" onClick={() => setStep(step + 1)}>{step === 2 ? 'Get started' : 'Next'}</button></div>;
   if (step < 6) { const [k, t, o] = Q[step - 3]; return <div><h1>{t}</h1>{o.map(x => <button key={x} className={'opt' + (a[k] === x ? ' on' : '')} onClick={() => { setA({ ...a, [k]: x }); setStep(step + 1); }}>{nice(x)}</button>)}</div>; }
-  const labels = ['I am 18 or older.', 'I agree to the Terms and Privacy Policy.', 'I consent to Facet AI processing my face photos to produce ratings.'];
+  const labels = ['I am 18 or older.', 'I agree to the Terms & Conditions and Privacy Policy.', 'I consent to Maxora processing my face photos to produce ratings.'];
   return <div><h1>Before you scan</h1>
     {labels.map((l, i) => <label key={i} className="card row" style={{ cursor: 'pointer' }}><span>{l}</span><input type="checkbox" checked={ck[i]} onChange={() => setCk(ck.map((x, j) => j === i ? !x : x))} /></label>)}
     {err && <div className="err">{err}</div>}
@@ -132,7 +132,7 @@ function Analyzing({ files, done, fail, paywall }) {
 function shareCard(s) {
   const c = document.createElement('canvas'); c.width = 600; c.height = 800; const x = c.getContext('2d');
   x.fillStyle = '#0B0B10'; x.fillRect(0, 0, 600, 800); x.fillStyle = '#16161F'; x.fillRect(30, 30, 540, 740);
-  x.fillStyle = '#fff'; x.font = '800 36px sans-serif'; x.fillText('Facet AI', 60, 100);
+  x.fillStyle = '#fff'; x.font = '800 36px sans-serif'; x.fillText('Maxora', 60, 100);
   x.fillStyle = col(s.overall_score); x.font = '800 150px sans-serif'; x.fillText(s.overall_score.toFixed(1), 60, 300);
   x.fillStyle = '#fff'; x.font = '700 40px sans-serif'; x.fillText(s.tier_label, 60, 370); x.fillStyle = '#A1A1B5'; x.font = '28px sans-serif'; x.fillText(s.psl_tier, 60, 410);
   if (s.feature_scores) Object.entries(s.feature_scores).sort((a, b) => b[1].score - a[1].score).slice(0, 3).forEach(([k, v], i) => { x.fillStyle = '#fff'; x.font = '28px sans-serif'; x.fillText(`${nice(k)}  ${v.score.toFixed(1)}`, 60, 500 + i * 60); });
