@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Facet AI",
+    "slug": "facet-ai",
+    "scheme": "facetai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0B0B10",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0B10"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.yourname.facetai",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSCameraUsageDescription": "Facet AI uses your camera to take the front and side photos for your face rating.",
+        "NSPhotoLibraryUsageDescription": "Facet AI reads photos you pick so it can rate your face."
+      }
+    },
+    "android": {
+      "package": "com.yourname.facetai",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0B10",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "CAMERA"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Facet AI uses your camera to take the front and side photos for your face rating.",
+          "photosPermission": "Facet AI reads photos you pick so it can rate your face."
+        }
+      ],
+      "expo-sharing",
+      "expo-status-bar"
+    ]
+  }
+}

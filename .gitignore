@@ -1,0 +1,12 @@
+backend/node_modules/
+backend/.next/
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/.env
+mobile/.env.*
+!mobile/.env.example
