@@ -9,13 +9,13 @@
     "userInterfaceStyle": "dark",
     "backgroundColor": "#080A0D",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#0B0B10"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.yourname.facetai",
+      "bundleIdentifier": "com.arafatanam.maxora",
       "config": {
         "usesNonExemptEncryption": false
       },
@@ -25,30 +25,33 @@
       }
     },
     "android": {
-      "package": "com.yourname.facetai",
+      "package": "com.arafatanam.maxora",
       "adaptiveIcon": {
         "backgroundColor": "#0B0B10",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/icon.png"
       },
-      "permissions": [
-        "CAMERA"
-      ]
+      "permissions": ["android.permission.CAMERA"]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/icon.png"
     },
     "plugins": [
       [
         "expo-image-picker",
         {
           "cameraPermission": "Maxora uses your camera to take the front and side photos for your face rating.",
-          "photosPermission": "Maxora reads photos you pick so it can rate your face."
+          "photosPermission": "Maxora reads photos you pick so it can rate your face.",
+          "microphonePermission": false
         }
       ],
       "expo-sharing",
       "expo-status-bar"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "df4516ab-7825-4d2e-ba82-d6b460cd2af2"
+      }
+    },
+    "owner": "arafatanam"
   }
 }
