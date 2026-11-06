@@ -1,13 +1,32 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Pressable, ActivityIndicator, Platform } from 'react-native';
+import { parseBlocks, parseInline } from '../markdown';
 import { ArrowUp } from '../icons';
 import { api } from '../api';
 import { T, Btn, Chip, Chips, Head, C, R, F, fmtTime } from '../ui';
 
 const STARTERS = ['What should I do first?', 'Build me a skincare routine', 'Which haircut suits my face?', 'How do I improve my jawline?'];
 
+// Inline runs are nested Text so bold and italic flow with the line. Custom fonts need the exact face per style.
+const face = p => p.b && p.i ? F.semiItalic : p.b ? F.semi : p.i ? F.italic : undefined;
+const Inline = ({ text }) => parseInline(text).map((p, k) => <Text key={k} style={p.code
+  ? { fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }), fontSize: 14, backgroundColor: C.card2 }
+  : face(p) && { fontFamily: face(p) }}>{p.text}</Text>);
+
+// Renders a Coach Maxy reply from parsed Markdown. Nothing is treated as markup beyond the parsed styles.
+function Markdown({ text }) {
+  return <View style={{ gap: 10 }}>{parseBlocks(text).map((b, k) => {
+    if (b.type === 'h') return <T key={k} selectable style={{ fontFamily: F.head, marginTop: k ? 4 : 0 }}><Inline text={b.text} /></T>;
+    if (b.type === 'p') return <T key={k} selectable><Inline text={b.text} /></T>;
+    return <View key={k} style={{ gap: 6 }}>{b.items.map((it, j) => <View key={j} style={{ flexDirection: 'row', gap: 8 }}>
+      <T style={{ color: C.light, minWidth: b.type === 'ol' ? 18 : 10 }}>{b.type === 'ol' ? `${it.n || j + 1}.` : '•'}</T>
+      <T selectable style={{ flex: 1 }}><Inline text={it.text} /></T>
+    </View>)}</View>;
+  })}</View>;
+}
+
 const Bubble = ({ m }) => <View style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '86%', backgroundColor: m.role === 'user' ? C.card2 : C.card, borderWidth: m.role === 'user' ? 0 : 1, borderColor: m.error ? C.dangerLine : C.line, paddingVertical: 11, paddingHorizontal: 15, borderRadius: R.surface, borderCurve: 'continuous', borderBottomRightRadius: m.role === 'user' ? 6 : R.surface, borderBottomLeftRadius: m.role === 'user' ? R.surface : 6 }}>
-  <T selectable>{m.content}</T></View>;
+  {m.role === 'assistant' && !m.error ? <Markdown text={m.content} /> : <T selectable>{m.content}</T>}</View>;
 
 export default function Coach({ me, scan, go, toEnd, onLimit }) {
   const [msgs, setMsgs] = useState(null), [t, setT] = useState(''), [busy, setBusy] = useState(false), [left, setLeft] = useState(me.limits.coach.remaining);

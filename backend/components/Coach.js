@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowUp } from 'lucide-react';
 import { api, fmtTime } from '@/lib/client';
 import { Reveal, PageHead } from './ui';
+import Markdown from './Markdown';
 
 const STARTERS = ['What should I do first?', 'Build me a skincare routine', 'Which haircut suits my face?', 'How do I improve my jawline?'];
 
@@ -42,7 +43,7 @@ export default function Coach({ me, scan, go, onLimit }) {
         <p className="meta">Try one of these</p>
         <div className="chips">{STARTERS.map(c => <button key={c} className="chip" onClick={() => send(c)} disabled={out}>{c}</button>)}</div>
       </div>}
-      {msgs?.map((m, i) => <div key={i} className={`msg ${m.role}${m.error ? ' error' : ''}`}>{m.content}</div>)}
+      {msgs?.map((m, i) => <div key={i} className={`msg ${m.role}${m.error ? ' error' : ''}`}>{m.role === 'assistant' && !m.error ? <Markdown text={m.content} /> : m.content}</div>)}
       {busy && <div className="msg assistant typing" aria-label="Coach Maxy is typing"><i /><i /><i /></div>}
       <div ref={end} />
     </div>

@@ -15,7 +15,7 @@ export const C = {
   fg: '#F5F3FF', fg2: 'rgba(245,243,255,0.74)', fg3: 'rgba(245,243,255,0.56)',
   danger: '#FFA3B5', dangerLine: 'rgba(255,163,181,0.38)', lo: '#A59BC9',
 };
-export const F = { head: 'Sora_600SemiBold', headBold: 'Sora_700Bold', body: 'Inter_400Regular', medium: 'Inter_500Medium', semi: 'Inter_600SemiBold' };
+export const F = { head: 'Sora_600SemiBold', headBold: 'Sora_700Bold', body: 'Inter_400Regular', medium: 'Inter_500Medium', semi: 'Inter_600SemiBold', italic: 'Inter_400Regular_Italic', semiItalic: 'Inter_600SemiBold_Italic' };
 export const R = { control: 12, surface: 16, pill: 999 };
 
 export const nice = s => (s || '').replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());

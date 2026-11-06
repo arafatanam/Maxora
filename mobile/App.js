@@ -7,6 +7,8 @@ import { Sora_700Bold } from '@expo-google-fonts/sora/700Bold';
 import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
 import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
 import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
+import { Inter_400Regular_Italic } from '@expo-google-fonts/inter/400Regular_Italic';
+import { Inter_600SemiBold_Italic } from '@expo-google-fonts/inter/600SemiBold_Italic';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { House, ScanFace, ListChecks, MessagesSquare, History as HistoryIcon, Settings as SettingsIcon, WifiOff } from './src/icons';
@@ -27,7 +29,7 @@ const TABS = [['home', 'Home', House], ['scan', 'Scan', ScanFace], ['plan', 'Pla
 const MAX_W = 640;
 
 function Shell() {
-  const [fontsLoaded] = useFonts({ Sora_600SemiBold, Sora_700Bold, Inter_400Regular, Inter_500Medium, Inter_600SemiBold });
+  const [fontsLoaded] = useFonts({ Sora_600SemiBold, Sora_700Bold, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_400Regular_Italic, Inter_600SemiBold_Italic });
   const [me, setMe] = useState(null), [scan, setScan] = useState(undefined), [err, setErr] = useState('');
   const [route, setRoute] = useState({ v: 'home' }), [viewed, setViewed] = useState(null);
   const stack = useRef([]), sc = useRef(), ins = useSafeAreaInsets(), { width } = useWindowDimensions();
