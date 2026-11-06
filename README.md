@@ -35,9 +35,9 @@ Web app (backend/app/page.js)      Expo app (mobile/)
 
   | Limit                     | Per IP, per day | Notes                                     |
   | ------------------------- | --------------- | ----------------------------------------- |
-  | Completed scans           | 5               | A failed or rejected analysis does not count |
-  | Analysis attempts         | 10              | Caps AI cost from repeated retries        |
-  | Photo upload sessions     | 15              | Caps storage from abandoned uploads       |
+  | Completed scans           | 3               | A failed or rejected analysis does not count |
+  | Analysis attempts         | 6               | Caps AI cost from repeated retries        |
+  | Photo upload sessions     | 9               | Caps storage from abandoned uploads       |
   | Coach Maxy messages        | 40              |                                           |
   | Any API request           | 120 per minute  | Burst protection                          |
 

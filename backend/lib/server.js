@@ -24,9 +24,9 @@ export function clientIp(req) {
 // coach:   Coach Maxy messages.
 // burst:   every API request. Stops scripted hammering of cheap endpoints.
 export const LIMITS = {
-  scan: { max: 5, window: 86400, label: 'scans' },
-  analyze: { max: 10, window: 86400, label: 'analysis attempts' },
-  upload: { max: 15, window: 86400, label: 'photo uploads' },
+  scan: { max: 3, window: 86400, label: 'scans' },
+  analyze: { max: 6, window: 86400, label: 'analysis attempts' },
+  upload: { max: 9, window: 86400, label: 'photo uploads' },
   coach: { max: 40, window: 86400, label: 'Coach Maxy messages' },
   burst: { max: 120, window: 60, label: 'requests' },
 };

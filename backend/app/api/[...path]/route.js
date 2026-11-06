@@ -125,8 +125,8 @@ async function coach(db, dev, ip, b) {
   if (!text) return E(400, 'Type a message first.');
   const { data: s } = await db.from('scans').select('*').eq('device_id', dev).eq('status', 'complete').order('created_at', { ascending: false }).limit(1).maybeSingle();
   if (!s) return E(400, 'Run a scan first. Coach Maxy uses your results.');
-  const r = await hit('coach', ip);
-  if (!r.ok) return limited(r, LIMITS.coach.label);
+  const left = await peek('coach', ip);
+  if (left.remaining <= 0) return limited(left, LIMITS.coach.label);
   const [{ data: plan }, { data: p }, { data: hist }] = await Promise.all([
     db.from('plan_items').select('title,category,completed').eq('scan_id', s.id),
     db.from('profiles').select('gender,age_range,main_goal').eq('device_id', dev).maybeSingle(),
@@ -136,8 +136,11 @@ async function coach(db, dev, ip, b) {
   const system = `${COACH_PROMPT}\n\nUser data: ${context}${DISTRESS.test(text) ? '\n\nThe user may be distressed. Be supportive, not blunt.' : ''}`;
   const messages = [...(hist || []).reverse().map(m => ({ role: m.role, content: m.content })), { role: 'user', content: text }];
   let reply;
-  try { reply = await ai('chat', system, messages, 500); }
+  // Generous token cap: reasoning models spend part of it before the reply. The prompt keeps replies short.
+  try { reply = await ai('chat', system, messages, 1500); }
   catch (e) { return E(502, `Coach Maxy is unavailable. ${e.message}`); }
+  // Only a delivered reply counts toward the daily limit.
+  const r = await hit('coach', ip);
   await db.from('chat_messages').insert([{ device_id: dev, scan_id: s.id, role: 'user', content: text }, { device_id: dev, scan_id: s.id, role: 'assistant', content: reply }]);
   return J({ reply, remaining: r.remaining });
 }
@@ -156,7 +159,8 @@ async function cron(db) {
     const { data } = await db.from('scans').select('id,front_path,side_path').lt('created_at', weekAgo).not('front_path', 'is', null).limit(500);
     if (!data?.length) break;
     await removePhotos(db, data);
-    await db.from('scans').update({ front_path: null, side_path: null }).in('id', data.map(r => r.id));
+    const { error } = await db.from('scans').update({ front_path: null, side_path: null }).in('id', data.map(r => r.id));
+    if (error) return E(500, `Photo cleanup failed: ${error.message}`);
     photos += data.length;
   }
   const { data: stale } = await db.from('scans').select('id,front_path,side_path').eq('status', 'pending').lt('created_at', dayAgo).limit(1000);
@@ -206,8 +210,10 @@ async function handle(req, ctx, method) {
       case 'GET scan': return getScan(db, dev, url.searchParams.get('id'));
       case 'GET scans': {
         const { data } = await db.from('scans').select('id,created_at,overall,tier,front_path').eq('device_id', dev).eq('status', 'complete').order('created_at', { ascending: false }).limit(100);
-        const list = await Promise.all((data || []).map(async s => ({ id: s.id, created_at: s.created_at, overall: Number(s.overall), tier: s.tier, thumb: s.front_path ? (await db.storage.from('photos').createSignedUrl(s.front_path, 3600)).data?.signedUrl || null : null })));
-        return J({ scans: list });
+        const paths = (data || []).map(s => s.front_path).filter(Boolean);
+        const signed = paths.length ? (await db.storage.from('photos').createSignedUrls(paths, 3600)).data || [] : [];
+        const url = Object.fromEntries(signed.filter(x => x.signedUrl).map(x => [x.path, x.signedUrl]));
+        return J({ scans: (data || []).map(s => ({ id: s.id, created_at: s.created_at, overall: Number(s.overall), tier: s.tier, thumb: url[s.front_path] || null })) });
       }
       case 'POST plan/toggle': {
         await db.from('plan_items').update({ completed: !!body.completed }).eq('id', body.id).eq('device_id', dev);

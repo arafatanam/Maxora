@@ -20,7 +20,7 @@ export default function Coach({ me, scan, go, toEnd, onLimit }) {
     if (!text || busy || out) return;
     setT(''); setBusy(true); setMsgs(m => [...(m || []), { role: 'user', content: text }]);
     try { const r = await api('coach', { message: text }); setMsgs(m => [...m, { role: 'assistant', content: r.reply }]); setLeft(r.remaining); onLimit(r.remaining); }
-    catch (e) { setMsgs(m => [...m, { role: 'assistant', content: e.message, error: true }]); if (e.status === 429) { setLeft(0); onLimit(0); } }
+    catch (e) { setMsgs(m => [...m, { role: 'assistant', content: e.message, error: true }]); if (e.status === 429 && e.data?.limit) { setLeft(0); onLimit(0); } }
     setBusy(false);
   };
   return <View style={{ flex: 1 }}>

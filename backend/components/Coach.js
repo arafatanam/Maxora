@@ -29,7 +29,7 @@ export default function Coach({ me, scan, go, onLimit }) {
       setLeft(r.remaining); onLimit(r.remaining);
     } catch (e) {
       setMsgs(m => [...m, { role: 'assistant', content: e.message, error: true }]);
-      if (e.status === 429) { setLeft(0); onLimit(0); }
+      if (e.status === 429 && e.data?.limit) { setLeft(0); onLimit(0); }
     }
     setBusy(false);
   };
