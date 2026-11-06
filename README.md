@@ -25,7 +25,7 @@ Web app (backend/app/page.js)      Expo app (mobile/)
                 |
                 +--> Supabase Postgres (scans, plans, chat, rate limits)
                 +--> Supabase Storage (private photos, deleted after 7 days)
-                +--> Groq vision and chat API (or mock mode)
+                +--> AI providers via lib/ai.js (Groq, optional Cloudflare fallback, or mock mode)
 ```
 
 - **No accounts.** Each browser or phone creates a random device ID, stores it
@@ -38,7 +38,7 @@ Web app (backend/app/page.js)      Expo app (mobile/)
   | Completed scans           | 5               | A failed or rejected analysis does not count |
   | Analysis attempts         | 10              | Caps AI cost from repeated retries        |
   | Photo upload sessions     | 15              | Caps storage from abandoned uploads       |
-  | Coach Vee messages        | 40              |                                           |
+  | Coach Maxy messages        | 40              |                                           |
   | Any API request           | 120 per minute  | Burst protection                          |
 
   Change the numbers in `LIMITS` in [`backend/lib/server.js`](./backend/lib/server.js).
@@ -46,7 +46,7 @@ Web app (backend/app/page.js)      Expo app (mobile/)
   `backend/vercel.json`) deletes photos 7 days after each scan, removes uploads
   that were never analyzed, and clears old rate-limit counters. Scores and plans
   are kept until the user deletes them in Settings.
-- **Uploads.** Both apps resize photos to 1280px before upload. The server
+- **Uploads.** Both apps resize photos to 1024px before upload. The server
   stores them in the private `photos` bucket, so neither app needs Supabase keys.
 
 ## Design
@@ -112,8 +112,11 @@ Set these values in `backend/.env.local`:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
+AI_VISION=groq:qwen/qwen3.8-27b
+AI_CHAT=
 GROQ_API_KEY=
-GROQ_MODEL=
+CLOUDFLARE_ACCOUNT_ID=
+CLOUDFLARE_API_TOKEN=
 MOCK_AI=false
 CRON_SECRET=
 IP_HASH_SALT=
@@ -160,13 +163,33 @@ npx expo start
 - Anonymous sign-ins are no longer used. You can turn them off under
   **Authentication → Providers**.
 
+## AI models
+
+`backend/lib/ai.js` sends requests to any provider that uses the OpenAI
+chat-completions format. `AI_VISION` (face analysis) and `AI_CHAT` (Coach Maxy)
+are comma-separated `provider:model` lists. Each request tries them in order and
+falls back when one is at its limit or down.
+
+- Free tiers cap each model's tokens per day for the whole app. A scan uses
+  about 5 to 7K tokens, so Groq's free tier covers roughly 30 scans a day.
+- Giving Coach Maxy its own model in `AI_CHAT` keeps chat from using up the
+  scan budget.
+- Adding `cloudflare:@cf/qwen/qwen3.8-27b` to `AI_VISION` adds about 15 more
+  free scans a day.
+- Only use providers that do not train on API data. Free tiers that do, such
+  as Gemini's, conflict with the privacy policy because requests contain face
+  photos.
+- For more volume, move to a paid tier. At current list prices a scan costs
+  about one cent.
+- If `AI_VISION` is unset, the older `GROQ_MODEL` variable still works.
+
 ## Main flows
 
 1. First visit: answer gender, age range and goal, and confirm age and consent.
 2. Add front and side photos. They are resized on the device and uploaded to the API.
 3. The API runs the analysis. Only a successful analysis counts toward the daily scan limit.
 4. View score, feature scores, strengths, face profile and the ranked plan.
-5. Tick off plan items, compare scans in History, and chat with Coach Vee.
+5. Tick off plan items, compare scans in History, and chat with Coach Maxy.
 6. Settings: edit profile answers, delete photos now, or delete all data
    (this also resets the device ID).
 
@@ -175,5 +198,7 @@ npx expo start
 - Facial ratings are estimates for self-improvement; they are not medical,
   professional, or objective judgments.
 - Replace the placeholder legal copy before release.
-- Keep the service-role key, Groq key, cron secret and IP hash salt only in
+- Keep the service-role key, AI provider keys, cron secret and IP hash salt only in
   backend environment variables.
+- Free AI tiers limit tokens per model per day for the whole app. See the AI
+  models section.

@@ -21,13 +21,13 @@ export function clientIp(req) {
 // scan:    completed scans. Only a successful analysis counts, so a rejected photo never costs a scan.
 // analyze: AI analysis attempts, including failures. Caps AI cost when someone retries in a loop.
 // upload:  photo upload sessions. Caps storage use from uploads that are never analyzed.
-// coach:   Coach Vee messages.
+// coach:   Coach Maxy messages.
 // burst:   every API request. Stops scripted hammering of cheap endpoints.
 export const LIMITS = {
   scan: { max: 5, window: 86400, label: 'scans' },
   analyze: { max: 10, window: 86400, label: 'analysis attempts' },
   upload: { max: 15, window: 86400, label: 'photo uploads' },
-  coach: { max: 40, window: 86400, label: 'Coach Vee messages' },
+  coach: { max: 40, window: 86400, label: 'Coach Maxy messages' },
   burst: { max: 120, window: 60, label: 'requests' },
 };
 

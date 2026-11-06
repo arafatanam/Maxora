@@ -14,7 +14,7 @@ export default function Coach({ me, scan, go, onLimit }) {
   const grow = el => { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 160) + 'px'; };
 
   if (!scan) return <Reveal>
-    <PageHead title="Coach Vee" sub="Coach Vee gives advice based on your scan results. Run a scan first." />
+    <PageHead title="Coach Maxy" sub="Coach Maxy gives advice based on your scan results. Run a scan first." />
     <div><button className="btn btn-primary" onClick={() => go('scan')}>Start a scan</button></div>
   </Reveal>;
 
@@ -35,7 +35,7 @@ export default function Coach({ me, scan, go, onLimit }) {
   };
   const out = left === 0;
   return <div className="chat">
-    <PageHead title="Coach Vee" sub="Practical advice on grooming, skincare, hair, fitness, posture and style, based on your latest scan." />
+    <PageHead title="Coach Maxy" sub="Practical advice on grooming, skincare, hair, fitness, posture and style, based on your latest scan." />
     <div className="messages" aria-live="polite">
       {msgs === null && <div className="sk" style={{ height: 80, width: '60%' }} />}
       {msgs?.length === 0 && <div className="stack" style={{ gap: 12 }}>
@@ -43,13 +43,13 @@ export default function Coach({ me, scan, go, onLimit }) {
         <div className="chips">{STARTERS.map(c => <button key={c} className="chip" onClick={() => send(c)} disabled={out}>{c}</button>)}</div>
       </div>}
       {msgs?.map((m, i) => <div key={i} className={`msg ${m.role}${m.error ? ' error' : ''}`}>{m.content}</div>)}
-      {busy && <div className="msg assistant typing" aria-label="Coach Vee is typing"><i /><i /><i /></div>}
+      {busy && <div className="msg assistant typing" aria-label="Coach Maxy is typing"><i /><i /><i /></div>}
       <div ref={end} />
     </div>
     <form className="composer" onSubmit={e => { e.preventDefault(); send(t); }}>
-      <label htmlFor="coach-input" className="sr-only">Message Coach Vee</label>
+      <label htmlFor="coach-input" className="sr-only">Message Coach Maxy</label>
       <textarea id="coach-input" ref={box} rows={1} value={t} disabled={out} maxLength={1000}
-        placeholder={out ? `Daily limit reached. Back after ${fmtTime(me.limits.coach.reset)}.` : 'Ask Coach Vee'}
+        placeholder={out ? `Daily limit reached. Back after ${fmtTime(me.limits.coach.reset)}.` : 'Ask Coach Maxy'}
         onChange={e => { setT(e.target.value); grow(e.target); }}
         onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(t); } }} />
       <button className="btn btn-primary" aria-label="Send message" disabled={!t.trim() || busy || out}><ArrowUp size={20} aria-hidden /></button>

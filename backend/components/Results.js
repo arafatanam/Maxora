@@ -93,7 +93,7 @@ export default function Results({ id, latest, go }) {
 
         {isLatest && <div className="actions">
           <button className="btn btn-primary" onClick={() => go('plan')}>Open improvement plan<ArrowRight size={18} aria-hidden /></button>
-          <button className="btn btn-secondary" onClick={() => go('coach')}><MessagesSquare size={18} aria-hidden />Ask Coach Vee</button>
+          <button className="btn btn-secondary" onClick={() => go('coach')}><MessagesSquare size={18} aria-hidden />Ask Coach Maxy</button>
         </div>}
         <p className="meta">{DISCLAIMER}</p>
       </div>

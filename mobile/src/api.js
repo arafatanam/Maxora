@@ -33,11 +33,11 @@ export const api = (path, body) => request(path, body
   ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }
   : { method: 'GET', headers: {} });
 
-// Resize to at most 1280px on the long side and save as JPEG before upload.
+// Resize to at most 1024px on the long side and save as JPEG before upload.
 export async function compress(asset) {
   const landscape = (asset.width || 0) >= (asset.height || 0);
   const ctx = ImageManipulator.manipulate(asset.uri);
-  if (Math.max(asset.width || 0, asset.height || 0) > 1280) ctx.resize(landscape ? { width: 1280 } : { height: 1280 });
+  if (Math.max(asset.width || 0, asset.height || 0) > 1024) ctx.resize(landscape ? { width: 1024 } : { height: 1024 });
   const img = await ctx.renderAsync();
   const out = await img.saveAsync({ compress: 0.86, format: SaveFormat.JPEG });
   return out.uri;

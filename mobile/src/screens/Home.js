@@ -10,7 +10,7 @@ export function Allowance({ limits }) {
     <T k="h2">Today's allowance</T>
     <View style={{ flexDirection: 'row', gap: 6 }}>{Array.from({ length: s.max }, (_, i) => <View key={i} style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: i < s.remaining ? C.accent : C.track }} />)}</View>
     <T><T k="num" style={{ fontSize: 15 }}>{s.remaining} of {s.max}</T> scans left</T>
-    <T k="meta">{c.remaining} of {c.max} Coach Vee messages left · resets {fmtTime(s.reset)}</T>
+    <T k="meta">{c.remaining} of {c.max} Coach Maxy messages left · resets {fmtTime(s.reset)}</T>
   </Card>;
 }
 

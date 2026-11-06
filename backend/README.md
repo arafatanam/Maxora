@@ -1,6 +1,6 @@
 # Maxora backend and web app
 
-Next.js 14 app. It serves the web app at `/` and the API at `/api/*`. Data lives in Supabase, and Groq provides vision analysis and chat. There are no accounts or payments.
+Next.js 14 app. It serves the web app at `/` and the API at `/api/*`. Data lives in Supabase. AI calls go through `lib/ai.js`, which tries the providers in `AI_VISION` and `AI_CHAT` in order (Groq, with Cloudflare Workers AI as an optional fallback). There are no accounts or payments.
 
 | Step | Action |
 | --- | --- |
@@ -9,7 +9,7 @@ Next.js 14 app. It serves the web app at `/` and the API at `/api/*`. Data lives
 | 3 | `npm run dev` and open http://localhost:3000 |
 | 4 | Deploy to Vercel and set the same variables there |
 
-`MOCK_AI=true` returns fixed results without calling Groq.
+`MOCK_AI=true` returns fixed results without calling any AI provider.
 
 ## Identity and limits
 
@@ -32,5 +32,5 @@ Vercel Cron calls `GET /api/cron` daily (see `vercel.json`), and sends `Authoriz
 | `GET scan[?id=]` | Latest or specific completed scan with plan |
 | `GET scans` | History list |
 | `POST plan/toggle` | `{ id, completed }` |
-| `GET chat`, `POST coach` | Coach Vee history and messages |
+| `GET chat`, `POST coach` | Coach Maxy history and messages |
 | `POST delete` | `{ mode: 'photos' \| 'all' }` |

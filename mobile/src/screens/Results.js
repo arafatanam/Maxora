@@ -48,7 +48,7 @@ export default function Results({ s, isLatest, go, back }) {
 
     {isLatest && <View style={{ gap: 10, marginTop: 28 }}>
       <Btn onPress={() => go('plan')}>Open improvement plan</Btn>
-      <Btn variant="secondary" icon={MessagesSquare} onPress={() => go('coach')}>Ask Coach Vee</Btn>
+      <Btn variant="secondary" icon={MessagesSquare} onPress={() => go('coach')}>Ask Coach Maxy</Btn>
     </View>}
     <T k="meta" style={{ marginTop: 20 }}>{DISC}</T>
   </View>;

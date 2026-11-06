@@ -43,9 +43,9 @@ export const api = (path, body) => request(path, body
 
 export const uploadPhoto = (id, k, blob) => request(`scan/photo?id=${id}&k=${k}`, { method: 'POST', headers: { 'content-type': blob.type || 'image/jpeg' }, body: blob });
 
-// Resize to at most 1280px on the long side and re-encode as JPEG. Keeps uploads small and fast,
+// Resize to at most 1024px on the long side and re-encode as JPEG. Keeps uploads small and fast,
 // and within the AI provider's image size limit. Falls back to the original file if the browser can't decode it.
-export async function compress(file, max = 1280, quality = 0.86) {
+export async function compress(file, max = 1024, quality = 0.86) {
   try {
     const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
     const s = Math.min(1, max / Math.max(bmp.width, bmp.height));

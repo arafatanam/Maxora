@@ -69,8 +69,10 @@ Add these before the first deploy. Select Production, Preview and Development fo
 | ------------------------------- | -------------------------------------------- |
 | `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL                         |
 | `SUPABASE_SERVICE_ROLE_KEY`     | Supabase service role key                    |
+| `AI_VISION`                     | Face analysis models, e.g. `groq:qwen/qwen3.8-27b`. Must be vision-capable |
+| `AI_CHAT`                       | Coach Maxy models. Optional; defaults to `AI_VISION` |
 | `GROQ_API_KEY`                  | Groq API key                                 |
-| `GROQ_MODEL`                    | A vision-capable Groq model                  |
+| `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` | Optional fallback provider       |
 | `MOCK_AI`                       | `false`                                      |
 | `CRON_SECRET`                   | Long random string. Vercel Cron sends it to `/api/cron` |
 | `IP_HASH_SALT`                  | Long random string. Keep it stable           |
@@ -91,7 +93,7 @@ Click **Deploy**. Vercel assigns a URL such as `https://maxora-app.vercel.app`.
 - Confirm the daily cron ran: Vercel dashboard, Settings, Cron Jobs.
 - Confirm Row Level Security is on for every table.
 - Confirm the `photos` storage bucket is private.
-- Compare Groq pricing and limits against expected traffic. Set a spending alert.
+- Free AI tiers cap each model's tokens per day for the whole app, not per user. A scan uses roughly 5 to 7K tokens. Watch usage in the Groq console, and move to a paid tier or add a fallback in `AI_VISION` before traffic outgrows it. Set a spending alert.
 - Confirm **Delete all my data** in Settings removes the database rows and the photo files in storage.
 - Replace the placeholder legal copy. The backend serves legal pages at `/legal/[doc]`. Use the public URL as the privacy policy link.
 
@@ -319,7 +321,7 @@ Choose the download option. Store the file in a password manager or private driv
 1. Open the build page link on an Android phone and tap Install. A QR code also works.
 2. Allow installs from your browser when Android asks.
 3. Turn off Wi-Fi and use mobile data.
-4. Run the full flow: sign-in, age confirmation, consent, onboarding, camera capture, photo picker, upload, scan, results, plan, history, Coach Vee, settings and account deletion.
+4. Run the full flow: age confirmation, consent, onboarding, camera capture, photo picker, upload, scan, results, plan, history, Coach Maxy, settings and data deletion.
 5. Switch on airplane mode during a scan. Confirm the app shows a clear error.
 
 No Android phone: install Android Studio, create a virtual device and run `eas build:run --platform android --latest`. The emulator uses a fake camera scene, so test uploads with the photo picker.
@@ -428,7 +430,7 @@ Declare these data types:
 - Profile details from onboarding.
 - Front and side face photos.
 - Scan results, history and coaching chat content.
-- Photos and prompts sent to Groq as a third-party processor.
+- Photos and prompts sent to the AI providers in `AI_VISION` and `AI_CHAT` (Groq, and Cloudflare if configured) as third-party processors.
 - A one-way hash of the IP address, kept for one day for rate limiting.
 
 Asset checklist:

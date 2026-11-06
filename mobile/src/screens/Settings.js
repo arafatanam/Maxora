@@ -55,7 +55,7 @@ export default function Settings({ me, setMe, reset }) {
     <Section title="Fair use">
       <Card>
         <T k="muted" style={{ fontSize: 14, lineHeight: 20 }}>Maxora is free. To keep it fast for everyone, each network gets a daily allowance. Limits reset at {fmtTime(me.limits.scan.reset)}.</T>
-        <KV rows={[['Scans per day', `${me.limits.scan.remaining} of ${me.limits.scan.max} left`], ['Coach Vee messages', `${me.limits.coach.remaining} of ${me.limits.coach.max} left`]]} />
+        <KV rows={[['Scans per day', `${me.limits.scan.remaining} of ${me.limits.scan.max} left`], ['Coach Maxy messages', `${me.limits.coach.remaining} of ${me.limits.coach.max} left`]]} />
       </Card>
     </Section>
 

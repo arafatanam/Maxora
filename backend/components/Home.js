@@ -10,7 +10,7 @@ export function Allowance({ limits }) {
     <h2 id="allow-h">Today's allowance</h2>
     <div className="allowance" aria-hidden>{Array.from({ length: s.max }, (_, i) => <span key={i} className={i < s.remaining ? 'on' : ''} />)}</div>
     <p><span className="num" style={{ color: 'var(--fg)', fontWeight: 600 }}>{s.remaining} of {s.max}</span> scans left</p>
-    <p className="meta">{c.remaining} of {c.max} Coach Vee messages left · resets {fmtTime(s.reset)}</p>
+    <p className="meta">{c.remaining} of {c.max} Coach Maxy messages left · resets {fmtTime(s.reset)}</p>
   </section>;
 }
 

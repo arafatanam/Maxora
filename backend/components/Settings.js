@@ -55,7 +55,7 @@ export default function Settings({ me, setMe, toast, reset }) {
         <p>Maxora is free. To keep it fast for everyone, each network gets a daily allowance. Limits reset at {fmtTime(me.limits.scan.reset)}.</p>
         <dl className="kv">
           <div><dt>Scans per day</dt><dd>{me.limits.scan.remaining} of {me.limits.scan.max} left</dd></div>
-          <div><dt>Coach Vee messages per day</dt><dd>{me.limits.coach.remaining} of {me.limits.coach.max} left</dd></div>
+          <div><dt>Coach Maxy messages per day</dt><dd>{me.limits.coach.remaining} of {me.limits.coach.max} left</dd></div>
         </dl>
       </section>
 

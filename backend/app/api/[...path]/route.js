@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { admin, deviceId, clientIp, hit, peek, LIMITS } from '@/lib/server';
+import { complete } from '@/lib/ai';
 import { ANALYSIS_PROMPT, SHORT_PROMPT, COACH_PROMPT, WEIGHTS, tierFor, DISTRESS } from '@/lib/prompts';
 
 export const maxDuration = 60;
@@ -12,7 +13,7 @@ const TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 const limited = (r, what) => E(429, `You've reached today's limit of ${r.max} ${what}. It resets ${new Date(r.reset).toUTCString().slice(17, 22)} UTC.`, { limit: r });
 
 function mockReply(system) {
-  if (system.includes('Coach Vee')) return 'Start with sleep and a daily SPF. Your skin scores lowest. Next step: apply SPF 30 tomorrow morning.';
+  if (system.includes('Coach Maxy')) return 'Start with sleep and a daily SPF. Your skin scores lowest. Next step: apply SPF 30 tomorrow morning.';
   const f = {};
   Object.keys(WEIGHTS).forEach((k, i) => { f[k] = { score: 4.5 + ((i * 7) % 30) / 10, verdict: `Mock verdict for ${k}.` }; });
   const cats = ['grooming', 'skincare', 'hair', 'fitness', 'posture', 'style', 'habits', 'skincare'];
@@ -25,24 +26,8 @@ function mockReply(system) {
   });
 }
 
-async function groq(system, messages, max = 2500) {
-  if (process.env.MOCK_AI === 'true') return mockReply(system);
-  if (!process.env.GROQ_API_KEY || !process.env.GROQ_MODEL) throw new Error('GROQ_API_KEY and GROQ_MODEL must be configured.');
-  const groqMessages = messages.map(message => ({
-    role: message.role,
-    content: Array.isArray(message.content) ? message.content.map(part => part.type === 'image'
-      ? { type: 'image_url', image_url: { url: `data:${part.source.media_type};base64,${part.source.data}` } }
-      : { type: 'text', text: part.text }) : message.content,
-  }));
-  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: { authorization: `Bearer ${process.env.GROQ_API_KEY}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ model: process.env.GROQ_MODEL, max_tokens: max, messages: [{ role: 'system', content: system }, ...groqMessages] }),
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(`Groq request failed (${r.status}): ${j.error?.message || 'Please try again.'}`);
-  return j.choices?.[0]?.message?.content || '';
-}
+const ai = (kind, system, messages, max) =>
+  process.env.MOCK_AI === 'true' ? Promise.resolve(mockReply(system)) : complete(kind, system, messages, max);
 const parse = t => { try { return JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1)); } catch { return null; } };
 const valid = r => r && (r.error || (r.feature_scores && Object.keys(WEIGHTS).every(k => typeof r.feature_scores[k]?.score === 'number') && Array.isArray(r.plan)));
 const clamp = n => Math.max(0, Math.min(10, Number(n) || 0));
@@ -105,7 +90,7 @@ async function analyze(db, dev, ip, b) {
   let res = null;
   for (const sys of [ANALYSIS_PROMPT, SHORT_PROMPT]) {
     try {
-      res = parse(await groq(sys, [{ role: 'user', content: [...imgs, ctx] }]));
+      res = parse(await ai('vision', sys, [{ role: 'user', content: [...imgs, ctx] }], 2500));
       if (valid(res)) break;
       res = null;
     } catch (e) { return E(502, `Face analysis failed: ${e.message} This did not use a scan.`); }
@@ -139,7 +124,7 @@ async function coach(db, dev, ip, b) {
   const text = String(b.message || '').trim().slice(0, 1000);
   if (!text) return E(400, 'Type a message first.');
   const { data: s } = await db.from('scans').select('*').eq('device_id', dev).eq('status', 'complete').order('created_at', { ascending: false }).limit(1).maybeSingle();
-  if (!s) return E(400, 'Run a scan first. Coach Vee uses your results.');
+  if (!s) return E(400, 'Run a scan first. Coach Maxy uses your results.');
   const r = await hit('coach', ip);
   if (!r.ok) return limited(r, LIMITS.coach.label);
   const [{ data: plan }, { data: p }, { data: hist }] = await Promise.all([
@@ -151,8 +136,8 @@ async function coach(db, dev, ip, b) {
   const system = `${COACH_PROMPT}\n\nUser data: ${context}${DISTRESS.test(text) ? '\n\nThe user may be distressed. Be supportive, not blunt.' : ''}`;
   const messages = [...(hist || []).reverse().map(m => ({ role: m.role, content: m.content })), { role: 'user', content: text }];
   let reply;
-  try { reply = (await groq(system, messages, 500)) || 'Coach Vee is offline. Try again in a minute.'; }
-  catch (e) { return E(502, `Coach Vee is unavailable: ${e.message}`); }
+  try { reply = await ai('chat', system, messages, 500); }
+  catch (e) { return E(502, `Coach Maxy is unavailable. ${e.message}`); }
   await db.from('chat_messages').insert([{ device_id: dev, scan_id: s.id, role: 'user', content: text }, { device_id: dev, scan_id: s.id, role: 'assistant', content: reply }]);
   return J({ reply, remaining: r.remaining });
 }
