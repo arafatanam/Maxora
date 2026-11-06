@@ -1,103 +1,105 @@
 # Maxora
 
-Maxora is a mobile-first facial self-improvement experience. Users create an
-anonymous account, provide consent and profile details, capture front and side
-photos, and receive an AI-generated facial analysis, improvement plan, history,
-and coaching chat. The app is intended for adults and its scores are estimates,
-not medical or objective judgments.
+Maxora is a free facial self-improvement app for the web and for iOS and Android.
+There is no sign-up: people open the app, confirm their age and consent, take a
+front and a side photo, and get an AI facial analysis, an improvement plan,
+scan history, and a coaching chat. It is for adults, and its scores are
+estimates, not medical or objective judgments.
 
 ## Repository identity
 
 - **GitHub repository:** `arafatanam/Maxora`
 - **URL:** https://github.com/arafatanam/Maxora.git
 - **Product name:** Maxora
-- **Repository layout:** one Expo React Native client and one Next.js API/backend
-- **Primary branch:** check the repository's current default branch on GitHub
+- **Repository layout:** one Expo React Native app and one Next.js app that
+  serves both the web app and the API
 
 ## Architecture
 
 ```text
-Expo React Native app (mobile/)
-        |
-        | HTTP requests + Supabase client auth/storage
-        v
-Next.js API (backend/app/api/[...path]/route.js)
-        |
-        +--> Supabase Auth, Postgres tables, and private photo storage
-        +--> Groq vision/chat API (or deterministic mock mode)
-        +--> Stripe subscription checks
+Web app (backend/app/page.js)      Expo app (mobile/)
+              \                      /
+               \  HTTPS + x-device-id
+                v                  v
+        Next.js API (backend/app/api/[...path]/route.js)
+                |
+                +--> Supabase Postgres (scans, plans, chat, rate limits)
+                +--> Supabase Storage (private photos, deleted after 7 days)
+                +--> Groq vision and chat API (or mock mode)
 ```
 
-The mobile app talks to the backend using `EXPO_PUBLIC_API_URL`. The backend
-owns privileged Supabase access, AI calls, scan limits, subscription checks,
-and persistence. Anonymous Supabase sign-in is used for the initial user flow.
+- **No accounts.** Each browser or phone creates a random device ID, stores it
+  locally, and sends it in the `x-device-id` header. All data belongs to that ID.
+- **Free with fair-use limits per IP address.** Limits are counted in Postgres,
+  and IP addresses are stored only as salted hashes:
 
-## Complete tracked file structure
+  | Limit                     | Per IP, per day | Notes                                     |
+  | ------------------------- | --------------- | ----------------------------------------- |
+  | Completed scans           | 5               | A failed or rejected analysis does not count |
+  | Analysis attempts         | 10              | Caps AI cost from repeated retries        |
+  | Photo upload sessions     | 15              | Caps storage from abandoned uploads       |
+  | Coach Vee messages        | 40              |                                           |
+  | Any API request           | 120 per minute  | Burst protection                          |
 
-Generated dependencies and build output are intentionally excluded from this
-tree (`node_modules`, `.next`, `.expo`, and `mobile/dist`).
+  Change the numbers in `LIMITS` in [`backend/lib/server.js`](./backend/lib/server.js).
+- **Photo retention.** A daily cron job (`/api/cron`, scheduled in
+  `backend/vercel.json`) deletes photos 7 days after each scan, removes uploads
+  that were never analyzed, and clears old rate-limit counters. Scores and plans
+  are kept until the user deletes them in Settings.
+- **Uploads.** Both apps resize photos to 1280px before upload. The server
+  stores them in the private `photos` bucket, so neither app needs Supabase keys.
+
+## Design
+
+- Palette: dark `#2B1B5A`, light `#B9A7FF`, accent `#5EF2C2`. The accent is used
+  only for primary actions, the active navigation item, and progress.
+- Type: Sora for titles and headings, Inter for body text.
+- Icon: [`mobile/assets/icon.svg`](./mobile/assets/icon.svg) is the source. The
+  PNG app icon, Android adaptive icon, splash image, favicons and web manifest
+  icons are rendered from it.
+- The web app uses a sidebar from 960px up and a bottom tab bar below that. It
+  works down to 320px wide and respects `prefers-reduced-motion`.
+
+## File structure
+
+Generated folders are not shown (`node_modules`, `.next`, `.expo`, `mobile/dist`).
 
 ```text
 Maxora/
-├── README.md                         # Project overview and setup guide
-├── .gitignore                        # Repository-level ignore rules
-├── backend/                          # Next.js 14 backend and web/legal surface
-│   ├── .env.example                  # Backend environment variable template
-│   ├── .gitignore
-│   ├── README.md                     # Backend-specific notes
-│   ├── package.json                  # Backend scripts and dependencies
-│   ├── package-lock.json
-│   ├── jsconfig.json                 # JavaScript path alias configuration
-│   ├── next.config.js
-│   ├── vercel.json                   # Vercel deployment configuration
+├── README.md
+├── PRODUCTION.md                     # Deployment guide
+├── backend/                          # Next.js 14: web app + API
+│   ├── .env.example
+│   ├── vercel.json                   # Daily cleanup cron
 │   ├── app/
-│   │   ├── globals.css               # Web/legal page styles
-│   │   ├── layout.js                 # Next metadata and root layout
-│   │   ├── page.js                   # Legal/consent web page
-│   │   ├── legal/[doc]/page.js       # Dynamic legal document page
-│   │   └── api/[...path]/route.js    # Consolidated API route handler
+│   │   ├── page.js                   # Web app shell, navigation and hash routing
+│   │   ├── layout.js                 # Fonts (Sora, Inter) and metadata
+│   │   ├── globals.css               # Design tokens and all web styles
+│   │   ├── icon.svg, apple-icon.png  # Favicons
+│   │   ├── manifest.js               # Web app manifest
+│   │   ├── legal/[doc]/page.js       # Terms, privacy, biometric notice
+│   │   └── api/[...path]/route.js    # All API routes
+│   ├── components/                   # Web screens and shared UI
 │   ├── lib/
-│   │   ├── prompts.js                # Analysis and coach prompts/scoring rules
-│   │   └── server.js                 # Supabase server client and auth helpers
+│   │   ├── client.js                 # Browser helpers: device ID, API, image resizing
+│   │   ├── server.js                 # Supabase admin client, device ID, IP rate limits
+│   │   └── prompts.js                # Analysis and coach prompts, scoring
+│   ├── public/                       # Manifest icons
 │   └── supabase/
-│       └── schema.sql                # Tables, storage, and database policies
-└── mobile/                           # Expo React Native client
-    ├── .env.example                  # Mobile environment variable template
-    ├── .gitignore
-    ├── LICENSE
-    ├── package.json                  # Expo scripts and dependencies
-    ├── package-lock.json
-    ├── app.json                      # Expo identity, permissions, and branding
-    ├── eas.json                      # EAS build configuration
-    ├── index.js                      # Expo entry point
-    ├── App.js                        # Session bootstrap and screen navigation
-    ├── assets/
-    │   └── icon.png                  # Canonical app icon, adaptive icon, splash, and favicon
+│       ├── schema.sql                # Fresh install
+│       └── migrations/               # Upgrades for existing databases
+└── mobile/                           # Expo React Native app
+    ├── app.json                      # Identity, icon, splash, permissions
+    ├── App.js                        # Navigation shell, tab bar, splash handling
+    ├── assets/                       # icon.svg (source) and rendered PNGs
     └── src/
-        ├── api.js                    # Authenticated backend request helper
-        ├── purchases.js              # RevenueCat purchase initialization
-        ├── ui.js                     # Shared UI primitives, theme, and legal copy
-        └── screens/
-            ├── Auth.js                # Sign-in/welcome screen
-            ├── Onboard.js             # Age, consent, and profile onboarding
-            ├── Scan.js                # Photo capture/picker and analysis state
-            ├── Results.js             # Scan score and AI result display
-            ├── Plan.js                # Improvement plan and completion state
-            ├── Coach.js               # AI coaching chat
-            ├── History.js             # Previous scans and progress
-            ├── Paywall.js             # Subscription/test-mode paywall
-            └── Settings.js            # Profile, account, and data actions
+        ├── api.js                    # Device ID, API, image resizing, uploads
+        ├── icons.js                  # Lucide icons, imported one by one
+        ├── ui.js                     # Theme, components, legal copy
+        └── screens/                  # Onboard, Home, Scan, Results, Plan, Coach, History, Settings
 ```
 
-## Prerequisites
-
-- Node.js 18 or newer
-- A Supabase project
-- A Groq API key and a vision-capable Groq model
-- Expo Go for device testing, or an Android/iOS simulator
-- Stripe and RevenueCat configuration for production billing
-
-## Backend setup
+## Backend and web app setup
 
 ```powershell
 cd backend
@@ -109,24 +111,22 @@ Set these values in `backend/.env.local`:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 GROQ_API_KEY=
 GROQ_MODEL=
 MOCK_AI=false
-TEST_MODE=true
+CRON_SECRET=
+IP_HASH_SALT=
 ```
 
-Start the backend on all local network interfaces so a physical device can
-reach it:
+Start it on all network interfaces so a phone on the same Wi-Fi can reach it:
 
 ```powershell
 cd backend
 npm run dev -- --hostname 0.0.0.0
 ```
 
-The backend is available at `http://localhost:3000` on the development
-computer.
+Open http://localhost:3000 for the web app.
 
 ## Mobile setup
 
@@ -136,53 +136,44 @@ Copy-Item .env.example .env
 npm install
 ```
 
-Set `EXPO_PUBLIC_API_URL` to the development computer's LAN IP when testing
-on a physical device:
+Set `EXPO_PUBLIC_API_URL` to your computer's LAN IP when testing on a phone:
 
 ```env
 EXPO_PUBLIC_API_URL=http://YOUR_PC_IP:3000
-EXPO_PUBLIC_SUPABASE_URL=
-EXPO_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
-Start Expo:
+All native modules the app uses are included in Expo Go.
 
 ```powershell
 cd mobile
 npx expo start
 ```
 
-Scan the QR code in Expo Go on a device connected to the same network. The
-canonical branding asset is [`mobile/assets/icon.png`](./mobile/assets/icon.png);
-[`mobile/app.json`](./mobile/app.json) uses it for the app icon, Android
-adaptive foreground, splash image, and web favicon.
-
 ## Supabase setup
 
-1. Create a Supabase project.
-2. Run [`backend/supabase/schema.sql`](./backend/supabase/schema.sql) in the
-   Supabase SQL editor.
-3. Enable anonymous sign-ins under **Authentication → Providers**.
-4. Confirm the `photos` storage bucket and database policies were created.
+- **New project:** run [`backend/supabase/schema.sql`](./backend/supabase/schema.sql)
+  in the SQL editor.
+- **Existing project from an earlier version:** run
+  [`backend/supabase/migrations/2026-11-06-free-no-auth.sql`](./backend/supabase/migrations/2026-11-06-free-no-auth.sql)
+  once. It renames `user_email` to `device_id`, drops subscriptions, and adds
+  the rate-limit table and function.
+- Anonymous sign-ins are no longer used. You can turn them off under
+  **Authentication → Providers**.
 
-## Main product flows
+## Main flows
 
-1. Start an anonymous guest session.
-2. Complete age confirmation, consent, and profile onboarding.
-3. Capture or select front and side photos.
-4. Store photos privately and request the backend analysis.
-5. Display the score, face profile, strengths, weaknesses, and improvement plan.
-6. Track plan completion, view scan history, and chat with Coach Vee.
-7. Enforce scan limits and subscription access through the backend.
+1. First visit: answer gender, age range and goal, and confirm age and consent.
+2. Add front and side photos. They are resized on the device and uploaded to the API.
+3. The API runs the analysis. Only a successful analysis counts toward the daily scan limit.
+4. View score, feature scores, strengths, face profile and the ranked plan.
+5. Tick off plan items, compare scans in History, and chat with Coach Vee.
+6. Settings: edit profile answers, delete photos now, or delete all data
+   (this also resets the device ID).
 
 ## Safety and production notes
 
-- Facial ratings are estimates for self-improvement and entertainment; they
-  are not medical, professional, or objective judgments.
-- Review and replace the legal copy before production release.
-- Keep service-role, Groq, Stripe, and other private keys only in backend
-  environment variables.
-- Set `MOCK_AI=false` and configure a vision-capable `GROQ_MODEL` for real AI
-  results.
-- Set `TEST_MODE=false` only after real Stripe prices/webhooks and RevenueCat
-  entitlements have been configured.
+- Facial ratings are estimates for self-improvement; they are not medical,
+  professional, or objective judgments.
+- Replace the placeholder legal copy before release.
+- Keep the service-role key, Groq key, cron secret and IP hash salt only in
+  backend environment variables.

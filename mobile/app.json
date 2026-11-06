@@ -7,35 +7,50 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#080A0D",
-    "splash": {
-      "image": "./assets/icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0B0B10"
-    },
+    "backgroundColor": "#150D2E",
     "ios": {
-      "supportsTablet": false,
+      "supportsTablet": true,
       "bundleIdentifier": "com.arafatanam.maxora",
       "config": {
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
         "NSCameraUsageDescription": "Maxora uses your camera to take the front and side photos for your face rating.",
-        "NSPhotoLibraryUsageDescription": "Maxora reads photos you pick so it can rate your face."
+        "NSPhotoLibraryUsageDescription": "Maxora reads photos you pick so it can rate your face.",
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait"
+        ],
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ]
       }
     },
     "android": {
       "package": "com.arafatanam.maxora",
       "adaptiveIcon": {
-        "backgroundColor": "#0B0B10",
-        "foregroundImage": "./assets/icon.png"
+        "backgroundColor": "#2B1B5A",
+        "foregroundImage": "./assets/adaptive-icon.png"
       },
-      "permissions": ["android.permission.CAMERA"]
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
-      "favicon": "./assets/icon.png"
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 140,
+          "resizeMode": "contain",
+          "backgroundColor": "#2B1B5A"
+        }
+      ],
       [
         "expo-image-picker",
         {
@@ -44,6 +59,7 @@
           "microphonePermission": false
         }
       ],
+      "expo-font",
       "expo-sharing",
       "expo-status-bar"
     ],

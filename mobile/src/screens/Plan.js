@@ -1,18 +1,42 @@
 import React from 'react';
-import { View, Switch } from 'react-native';
+import { View, Pressable } from 'react-native';
+import { Check } from '../icons';
 import { api } from '../api';
-import { T, Card, Row, Btn, Bar, Tag, nice, CATS } from '../ui';
+import { T, Card, Row, Btn, Bar, Badge, Head, Section, C, nice, CATS, tap } from '../ui';
 
 export default function Plan({ s, go, setS }) {
-  if (!s) return <View><T k="h1">Plan</T><T k="g">Run a scan to get your plan.</T><Btn onPress={() => go('scan')}>Scan now</Btn></View>;
-  if (s.locked) return <View><T k="h1">Plan</T><Card><T k="g">Your ranked plan is part of the full report.</T><Btn onPress={() => go('paywall')}>Unlock now</Btn></Card></View>;
-  const plan = s.plan || [], pct = plan.length ? Math.round(plan.filter(p => p.completed).length / plan.length * 100) : 0;
-  const tog = async p => { const completed = !p.completed; setS({ ...s, plan: plan.map(x => x.id === p.id ? { ...x, completed } : x) }); try { await api('plan/toggle', { id: p.id, completed }); } catch {} };
-  return <View><T k="h1">Plan</T><T k="g" style={{ marginBottom: 6 }}>{pct}% done</T><Bar v={pct / 10} />
-    {CATS.filter(c => plan.some(p => p.category === c)).map(c => <View key={c}><T k="h2">{nice(c)}</T>
-      {plan.filter(p => p.category === c).map(p => <Card key={p.id}><Row style={{ alignItems: 'flex-start' }}>
-        <View style={{ flex: 1 }}><T k="h3">{p.title}</T><T k="g">{p.reason}</T>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8, gap: 4 }}><Tag>Effort {p.effort}</Tag><Tag>Impact {p.impact}</Tag><Tag>{p.time_to_result}</Tag></View></View>
-        <Switch value={!!p.completed} onValueChange={() => tog(p)} /></Row></Card>)}</View>)}
+  if (!s) return <View><Head title="Improvement plan" sub="Your plan is built from your scan results. Run a scan to get one." /><Btn onPress={() => go('scan')}>Start a scan</Btn></View>;
+  const plan = s.plan || [], done = plan.filter(p => p.completed).length;
+  const tog = async p => {
+    tap();
+    const completed = !p.completed, set = c => setS(x => ({ ...x, plan: x.plan.map(i => i.id === p.id ? { ...i, completed: c } : i) }));
+    set(completed);
+    try { await api('plan/toggle', { id: p.id, completed }); } catch { set(!completed); }
+  };
+  const groups = [...CATS.filter(c => plan.some(p => p.category === c)).map(c => [nice(c), plan.filter(p => p.category === c)])];
+  const other = plan.filter(p => !CATS.includes(p.category));
+  if (other.length) groups.push(['Other', other]);
+  return <View>
+    <Head title="Improvement plan" sub="Ranked by impact for the effort. Tick actions off as you build them into your routine." />
+    <Card style={{ gap: 10 }}>
+      <Row><T k="h2">{done === plan.length && plan.length ? 'All done' : 'Progress'}</T><T k="num">{done} / {plan.length}</T></Row>
+      <Bar v={done} max={plan.length || 1} color={C.accent} />
+    </Card>
+    {groups.map(([title, items]) => <Section key={title} title={title}>
+      <Card style={{ paddingVertical: 4, gap: 0 }}>
+        {items.map((p, i) => <Pressable key={p.id} onPress={() => tog(p)} accessibilityRole="checkbox" accessibilityState={{ checked: !!p.completed }} accessibilityLabel={p.title}
+          style={({ pressed }) => ({ flexDirection: 'row', gap: 14, paddingVertical: 14, borderBottomWidth: i < items.length - 1 ? 1 : 0, borderBottomColor: C.line, opacity: pressed ? 0.7 : 1 })}>
+          <View style={{ width: 22, height: 22, marginTop: 1, borderRadius: 7, borderWidth: 1.5, borderColor: p.completed ? C.accent : C.lineStrong, backgroundColor: p.completed ? C.accent : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+            {p.completed && <Check size={14} strokeWidth={3} color={C.onAccent} />}</View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <T k="h3" style={p.completed ? { color: C.fg3, textDecorationLine: 'line-through' } : null}>{p.title}</T>
+            <T k="muted" style={{ fontSize: 14, lineHeight: 20 }}>{p.reason}</T>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+              {!!p.impact && <Badge accent>Impact {p.impact}</Badge>}{!!p.effort && <Badge>Effort {p.effort}</Badge>}{!!p.time_to_result && <Badge>{p.time_to_result}</Badge>}
+            </View>
+          </View>
+        </Pressable>)}
+      </Card>
+    </Section>)}
   </View>;
 }

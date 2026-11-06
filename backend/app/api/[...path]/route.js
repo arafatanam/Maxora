@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
-import { admin, getUser, isPaid } from '@/lib/server';
+import { admin, deviceId, clientIp, hit, peek, LIMITS } from '@/lib/server';
 import { ANALYSIS_PROMPT, SHORT_PROMPT, COACH_PROMPT, WEIGHTS, tierFor, DISTRESS } from '@/lib/prompts';
 
 export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
 const J = (o, status = 200) => NextResponse.json(o, { status });
-const E = (status, error) => J({ error }, status);
-const TEST = () => process.env.TEST_MODE === 'true';
+const E = (status, error, extra) => J({ error, ...extra }, status);
+const PHOTO_DAYS = 7;
+const TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+
+const limited = (r, what) => E(429, `You've reached today's limit of ${r.max} ${what}. It resets ${new Date(r.reset).toUTCString().slice(17, 22)} UTC.`, { limit: r });
 
 function mockReply(system) {
   if (system.includes('Coach Vee')) return 'Start with sleep and a daily SPF. Your skin scores lowest. Next step: apply SPF 30 tomorrow morning.';
@@ -44,21 +47,58 @@ const parse = t => { try { return JSON.parse(t.slice(t.indexOf('{'), t.lastIndex
 const valid = r => r && (r.error || (r.feature_scores && Object.keys(WEIGHTS).every(k => typeof r.feature_scores[k]?.score === 'number') && Array.isArray(r.plan)));
 const clamp = n => Math.max(0, Math.min(10, Number(n) || 0));
 
-async function analyze(u, b) {
-  const db = admin();
-  const paid = await isPaid(u.email);
-  const { count: total } = await db.from('scans').select('id', { count: 'exact', head: true }).eq('user_email', u.email);
-  if (!paid && total >= 1) return E(402, 'paywall');
-  const since = new Date(Date.now() - 7 * 864e5).toISOString();
-  const { count: week } = await db.from('scans').select('id', { count: 'exact', head: true }).eq('user_email', u.email).gte('created_at', since);
-  if (week >= 5) return E(429, 'Weekly limit of 5 scans reached. Come back later.');
-  const { data: p } = await db.from('profiles').select('*').eq('user_email', u.email).maybeSingle();
-  if (!p?.consent_at || !p.age_confirmed) return E(403, 'Consent and age confirmation required.');
+async function profileReady(db, dev) {
+  const { data: p } = await db.from('profiles').select('*').eq('device_id', dev).maybeSingle();
+  return p?.consent_at && p.age_confirmed ? p : null;
+}
+
+// Step 1 of a scan: create a pending scan row.
+async function startScan(db, dev, ip) {
+  if (!(await profileReady(db, dev))) return E(403, 'Confirm your age and consent before scanning.');
+  const left = await peek('scan', ip);
+  if (left.remaining <= 0) return limited(left, LIMITS.scan.label);
+  const up = await hit('upload', ip);
+  if (!up.ok) return limited(up, LIMITS.upload.label);
+  const { data, error } = await db.from('scans').insert({ device_id: dev, status: 'pending' }).select('id').single();
+  if (error) return E(500, 'Could not start the scan. Try again.');
+  return J({ id: data.id });
+}
+
+// Step 2: the app sends each photo (already resized on the device) as the raw request body.
+const MAX_PHOTO = 4 * 1024 * 1024;
+async function uploadPhoto(db, dev, req, url) {
+  const id = url.searchParams.get('id'), k = url.searchParams.get('k');
+  if (!['front', 'side'].includes(k)) return E(400, 'Unknown photo slot.');
+  const type = (req.headers.get('content-type') || '').split(';')[0].trim().replace('image/jpg', 'image/jpeg');
+  if (!TYPES[type]) return E(400, 'Use a JPG, PNG or WEBP photo.');
+  const { data: scan } = await db.from('scans').select('id,status').eq('id', id || '00000000-0000-0000-0000-000000000000').eq('device_id', dev).maybeSingle();
+  if (!scan || scan.status !== 'pending') return E(404, 'Scan not found. Start a new scan.');
+  const buf = Buffer.from(await req.arrayBuffer());
+  if (!buf.length) return E(400, 'The photo was empty. Pick it again.');
+  if (buf.length > MAX_PHOTO) return E(413, 'Photo is too large. Pick a smaller photo.');
+  const path = `${dev}/${scan.id}-${k}.${TYPES[type]}`;
+  const { error } = await db.storage.from('photos').upload(path, buf, { contentType: type, upsert: true });
+  if (error) return E(500, 'Photo upload failed. Try again.');
+  await db.from('scans').update({ [`${k}_path`]: path }).eq('id', scan.id);
+  return J({ ok: true });
+}
+
+// Step 2: analyze the uploaded photos. Only a successful analysis uses one of the day's scans.
+async function analyze(db, dev, ip, b) {
+  const p = await profileReady(db, dev);
+  if (!p) return E(403, 'Confirm your age and consent before scanning.');
+  const { data: scan } = await db.from('scans').select('id,status,front_path,side_path').eq('id', b.id || '00000000-0000-0000-0000-000000000000').eq('device_id', dev).maybeSingle();
+  if (!scan) return E(404, 'Scan not found. Start a new scan.');
+  if (scan.status === 'complete') return J({ id: scan.id });
+  if (!scan.front_path || !scan.side_path) return E(400, 'Photo upload did not finish. Retake your photos and try again.');
+  const left = await peek('scan', ip);
+  if (left.remaining <= 0) return limited(left, LIMITS.scan.label);
+  const tries = await hit('analyze', ip);
+  if (!tries.ok) return limited(tries, LIMITS.analyze.label);
   const imgs = [];
-  for (const path of [b.front, b.side]) {
-    if (!path?.startsWith(u.id + '/')) return E(400, 'Bad photo path.');
+  for (const path of [scan.front_path, scan.side_path]) {
     const { data } = await db.storage.from('photos').download(path);
-    if (!data) return E(400, 'Photo not found.');
+    if (!data) return E(400, 'Photo upload did not finish. Retake your photos and try again.');
     imgs.push({ type: 'image', source: { type: 'base64', media_type: data.type || 'image/jpeg', data: Buffer.from(await data.arrayBuffer()).toString('base64') } });
   }
   const ctx = { type: 'text', text: `Image 1 is the front photo. Image 2 is the side profile. Gender: ${p.gender}. Age range: ${p.age_range}. Goal: ${p.main_goal}.` };
@@ -68,192 +108,143 @@ async function analyze(u, b) {
       res = parse(await groq(sys, [{ role: 'user', content: [...imgs, ctx] }]));
       if (valid(res)) break;
       res = null;
-    } catch (e) { return E(502, `Face analysis failed: ${e.message}`); }
+    } catch (e) { return E(502, `Face analysis failed: ${e.message} This did not use a scan.`); }
   }
-  if (!res) return E(502, 'Analysis failed. No scan was used. Retake your photos and try again.');
-  if (res.error) return E(422, res.error);
+  if (!res) return E(502, 'Analysis failed. This did not use a scan. Try again or retake your photos.');
+  if (res.error) return E(422, `${res.error} This did not use a scan.`);
   let overall = 0;
   for (const k in WEIGHTS) { res.feature_scores[k].score = clamp(res.feature_scores[k].score); overall += WEIGHTS[k] * res.feature_scores[k].score; }
   overall = Math.round(overall * 10) / 10;
   const [tier, psl] = tierFor(overall);
-  const { data: scan } = await db.from('scans').insert({
-    user_email: u.email, front_path: b.front, side_path: b.side, overall, potential: clamp(res.potential_score), tier, psl,
+  await db.from('scans').update({
+    status: 'complete', overall, potential: clamp(res.potential_score), tier, psl, created_at: new Date().toISOString(),
     result: { summary: res.summary, feature_scores: res.feature_scores, face_profile: res.face_profile, strengths: res.strengths, weaknesses: res.weaknesses },
-  }).select('id').single();
-  const plan = res.plan.slice(0, 12).map((x, i) => ({ scan_id: scan.id, user_email: u.email, category: x.category, title: x.title, reason: x.reason, effort: x.effort, impact: x.impact, time_to_result: x.time_to_result, priority: x.priority || i + 1 }));
+  }).eq('id', scan.id);
+  const plan = res.plan.slice(0, 12).map((x, i) => ({ scan_id: scan.id, device_id: dev, category: x.category, title: x.title, reason: x.reason, effort: x.effort, impact: x.impact, time_to_result: x.time_to_result, priority: x.priority || i + 1 }));
   await db.from('plan_items').insert(plan);
+  await hit('scan', ip);
   return J({ id: scan.id });
 }
 
-async function getScan(u, id) {
-  const db = admin();
-  let q = db.from('scans').select('*').eq('user_email', u.email);
+async function getScan(db, dev, id) {
+  let q = db.from('scans').select('*').eq('device_id', dev).eq('status', 'complete');
   q = id ? q.eq('id', id) : q.order('created_at', { ascending: false }).limit(1);
   const { data: s } = await q.maybeSingle();
   if (!s) return J({ scan: null });
-  const paid = await isPaid(u.email);
-  const out = { id: s.id, created_at: s.created_at, overall_score: s.overall, tier_label: s.tier, psl_tier: s.psl, locked: !paid };
-  if (paid) {
-    const { data: plan } = await db.from('plan_items').select('*').eq('scan_id', s.id).order('priority');
-    Object.assign(out, { potential_score: s.potential, ...s.result, plan });
-  }
-  return J({ scan: out });
+  const { data: plan } = await db.from('plan_items').select('*').eq('scan_id', s.id).order('priority');
+  return J({ scan: { id: s.id, created_at: s.created_at, overall_score: Number(s.overall), tier_label: s.tier, psl_tier: s.psl, potential_score: s.potential == null ? null : Number(s.potential), photos_deleted: !s.front_path, ...s.result, plan: plan || [] } });
 }
 
-async function coach(u, b) {
-  if (!(await isPaid(u.email))) return E(402, 'paywall');
-  const db = admin();
-  const day = new Date(); day.setUTCHours(0, 0, 0, 0);
-  const { count } = await db.from('chat_messages').select('id', { count: 'exact', head: true }).eq('user_email', u.email).eq('role', 'user').gte('created_at', day.toISOString());
-  if (count >= 50) return E(429, 'Daily limit of 50 messages reached.');
-  const { data: s } = await db.from('scans').select('*').eq('user_email', u.email).order('created_at', { ascending: false }).limit(1).maybeSingle();
-  if (!s) return E(400, 'Run a scan first.');
+async function coach(db, dev, ip, b) {
+  const text = String(b.message || '').trim().slice(0, 1000);
+  if (!text) return E(400, 'Type a message first.');
+  const { data: s } = await db.from('scans').select('*').eq('device_id', dev).eq('status', 'complete').order('created_at', { ascending: false }).limit(1).maybeSingle();
+  if (!s) return E(400, 'Run a scan first. Coach Vee uses your results.');
+  const r = await hit('coach', ip);
+  if (!r.ok) return limited(r, LIMITS.coach.label);
   const [{ data: plan }, { data: p }, { data: hist }] = await Promise.all([
     db.from('plan_items').select('title,category,completed').eq('scan_id', s.id),
-    db.from('profiles').select('gender,age_range,main_goal').eq('user_email', u.email).maybeSingle(),
-    db.from('chat_messages').select('role,content').eq('user_email', u.email).order('created_at', { ascending: false }).limit(10),
+    db.from('profiles').select('gender,age_range,main_goal').eq('device_id', dev).maybeSingle(),
+    db.from('chat_messages').select('role,content').eq('device_id', dev).order('created_at', { ascending: false }).limit(10),
   ]);
-  const context = JSON.stringify({ overall: s.overall, tier: s.tier, ...s.result, open_plan: plan.filter(x => !x.completed), profile: p });
-  const system = `${COACH_PROMPT}\n\nUser data: ${context}${DISTRESS.test(b.message) ? '\n\nThe user may be distressed. Be supportive, not blunt.' : ''}`;
-  const messages = [...(hist || []).reverse().map(m => ({ role: m.role, content: m.content })), { role: 'user', content: String(b.message).slice(0, 1000) }];
+  const context = JSON.stringify({ overall: s.overall, tier: s.tier, ...s.result, open_plan: (plan || []).filter(x => !x.completed), profile: p });
+  const system = `${COACH_PROMPT}\n\nUser data: ${context}${DISTRESS.test(text) ? '\n\nThe user may be distressed. Be supportive, not blunt.' : ''}`;
+  const messages = [...(hist || []).reverse().map(m => ({ role: m.role, content: m.content })), { role: 'user', content: text }];
   let reply;
   try { reply = (await groq(system, messages, 500)) || 'Coach Vee is offline. Try again in a minute.'; }
   catch (e) { return E(502, `Coach Vee is unavailable: ${e.message}`); }
-  await db.from('chat_messages').insert([{ user_email: u.email, scan_id: s.id, role: 'user', content: b.message }, { user_email: u.email, scan_id: s.id, role: 'assistant', content: reply }]);
-  return J({ reply });
+  await db.from('chat_messages').insert([{ device_id: dev, scan_id: s.id, role: 'user', content: text }, { device_id: dev, scan_id: s.id, role: 'assistant', content: reply }]);
+  return J({ reply, remaining: r.remaining });
 }
 
-async function subscribe(u, b, req) {
-  const trial = b.plan === 'weekly_trial';
-  const db = admin();
-  if (TEST()) {
-    await db.from('subscriptions').upsert({ user_email: u.email, plan: b.plan, status: trial ? 'trialing' : 'active', current_period_end: new Date(Date.now() + (trial ? 3 : 7) * 864e5).toISOString() });
-    return J({ ok: true });
+async function removePhotos(db, rows) {
+  const files = rows.flatMap(s => [s.front_path, s.side_path]).filter(Boolean);
+  for (let i = 0; i < files.length; i += 500) await db.storage.from('photos').remove(files.slice(i, i + 500));
+}
+
+// Daily job (vercel.json). Deletes photos 7 days after each scan, abandoned uploads after a day, and old rate-limit counters.
+async function cron(db) {
+  const weekAgo = new Date(Date.now() - PHOTO_DAYS * 864e5).toISOString();
+  const dayAgo = new Date(Date.now() - 864e5).toISOString();
+  let photos = 0;
+  for (;;) {
+    const { data } = await db.from('scans').select('id,front_path,side_path').lt('created_at', weekAgo).not('front_path', 'is', null).limit(500);
+    if (!data?.length) break;
+    await removePhotos(db, data);
+    await db.from('scans').update({ front_path: null, side_path: null }).in('id', data.map(r => r.id));
+    photos += data.length;
   }
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-  const origin = new URL(req.url).origin;
-  const s = await stripe.checkout.sessions.create({
-    mode: 'subscription', customer_email: u.email, metadata: { email: u.email, plan: b.plan },
-    line_items: [{ price: trial ? process.env.STRIPE_PRICE_WEEKLY_TRIAL : process.env.STRIPE_PRICE_WEEKLY, quantity: 1 }],
-    subscription_data: trial ? { trial_period_days: 3 } : undefined, success_url: origin + '/?paid=1', cancel_url: origin + '/',
-  });
-  return J({ url: s.url });
-}
-
-async function webhook(req) {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-  let ev;
-  try { ev = stripe.webhooks.constructEvent(await req.text(), req.headers.get('stripe-signature'), process.env.STRIPE_WEBHOOK_SECRET); } catch { return E(400, 'Bad signature'); }
-  const db = admin();
-  const map = s => s === 'trialing' ? 'trialing' : s === 'active' ? 'active' : s === 'canceled' ? 'cancelled' : 'expired';
-  const o = ev.data.object;
-  if (ev.type === 'checkout.session.completed') {
-    const sub = await stripe.subscriptions.retrieve(o.subscription);
-    await db.from('subscriptions').upsert({ user_email: o.metadata.email, plan: o.metadata.plan, status: map(sub.status), stripe_customer_id: o.customer, stripe_subscription_id: sub.id, current_period_end: new Date(sub.current_period_end * 1000).toISOString() });
-  } else if (ev.type === 'invoice.paid' || ev.type.startsWith('customer.subscription.')) {
-    const id = ev.type === 'invoice.paid' ? o.subscription : o.id;
-    const sub = await stripe.subscriptions.retrieve(id);
-    await db.from('subscriptions').update({ status: map(sub.status), current_period_end: new Date(sub.current_period_end * 1000).toISOString() }).eq('stripe_subscription_id', id);
-  }
-  return J({ ok: true });
-}
-
-async function wipePhotos(db, email) {
-  const { data } = await db.from('scans').select('id,front_path,side_path').eq('user_email', email);
-  const files = (data || []).flatMap(s => [s.front_path, s.side_path]).filter(Boolean);
-  if (files.length) await db.storage.from('photos').remove(files);
-  await db.from('scans').update({ front_path: null, side_path: null }).eq('user_email', email);
+  const { data: stale } = await db.from('scans').select('id,front_path,side_path').eq('status', 'pending').lt('created_at', dayAgo).limit(1000);
+  if (stale?.length) { await removePhotos(db, stale); await db.from('scans').delete().in('id', stale.map(r => r.id)); }
+  await db.from('rate_limits').delete().lt('expires_at', new Date().toISOString());
+  return J({ photos_deleted: photos, abandoned_removed: stale?.length || 0 });
 }
 
 async function handle(req, ctx, method) {
   const [a, b] = ctx.params.path;
-  if (a === 'webhook') return webhook(req);
-  if (a === 'rc') {
-    if (req.headers.get('authorization') !== `Bearer ${process.env.RC_WEBHOOK_SECRET}`) return E(401, 'No');
-    const { event } = await req.json();
-    const { data } = await admin().auth.admin.getUserById(event.app_user_id);
-    const email = data?.user?.email || (data?.user?.id ? `${data.user.id}@guest.facet.ai` : null);
-    if (!email) return J({ ok: true });
-    const live = ['INITIAL_PURCHASE', 'RENEWAL', 'PRODUCT_CHANGE', 'UNCANCELLATION'].includes(event.type);
-    if (live || event.type === 'EXPIRATION') {
-      await admin().from('subscriptions').upsert({
-        user_email: email, plan: event.product_id,
-        status: event.type === 'EXPIRATION' ? 'expired' : event.period_type === 'TRIAL' ? 'trialing' : 'active',
-        current_period_end: new Date(event.expiration_at_ms).toISOString(),
-      });
-    }
-    return J({ ok: true });
-  }
-  if (a === 'cron') {
-    if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) return E(401, 'No');
-    const db = admin();
-    const old = new Date(Date.now() - 30 * 864e5).toISOString();
-    const { data: keep } = await db.from('profiles').select('user_email').eq('keep_photos', true);
-    const { data } = await db.from('scans').select('id,front_path,side_path,user_email').lt('created_at', old).not('front_path', 'is', null);
-    const rows = (data || []).filter(s => !(keep || []).some(k => k.user_email === s.user_email));
-    const files = rows.flatMap(s => [s.front_path, s.side_path]);
-    if (files.length) { await db.storage.from('photos').remove(files); await db.from('scans').update({ front_path: null, side_path: null }).in('id', rows.map(r => r.id)); }
-    return J({ deleted: rows.length });
-  }
-  const authUser = await getUser(req);
-  if (!authUser) return E(401, 'Guest session required.');
-  const guest = !authUser.email;
-  const u = { ...authUser, email: authUser.email || `${authUser.id}@guest.facet.ai` };
   const db = admin();
-  const body = method === 'POST' ? await req.json().catch(() => ({})) : {};
-  const url = new URL(req.url);
-  switch (`${method} ${a}${b ? '/' + b : ''}`) {
-    case 'GET me': {
-      const { data: profile } = await db.from('profiles').select('*').eq('user_email', u.email).maybeSingle();
-      const { data: sub } = await db.from('subscriptions').select('*').eq('user_email', u.email).maybeSingle();
-      return J({ email: guest ? 'Guest session' : u.email, guest, profile, sub, paid: await isPaid(u.email), test: TEST() });
-    }
-    case 'POST profile': {
-      if (!body.age_confirmed || !body.consent_accepted) return E(400, 'Confirm age and consent to continue.');
-      await db.from('profiles').upsert({ user_email: u.email, gender: body.gender, age_range: body.age_range, main_goal: body.main_goal, age_confirmed: true, consent_at: new Date().toISOString(), onboarded: true });
-      return J({ ok: true });
-    }
-    case 'POST settings': {
-      const patch = {};
-      for (const k of ['gender', 'age_range', 'main_goal', 'keep_photos']) if (k in body) patch[k] = body[k];
-      await db.from('profiles').update(patch).eq('user_email', u.email);
-      return J({ ok: true });
-    }
-    case 'POST analyze': return analyze(u, body);
-    case 'GET scan': return getScan(u, url.searchParams.get('id'));
-    case 'GET scans': {
-      const { data } = await db.from('scans').select('id,created_at,overall,tier,front_path').eq('user_email', u.email).order('created_at', { ascending: false });
-      const list = await Promise.all((data || []).map(async s => ({ id: s.id, created_at: s.created_at, overall: s.overall, tier: s.tier, thumb: s.front_path ? (await db.storage.from('photos').createSignedUrl(s.front_path, 3600)).data?.signedUrl : null })));
-      return J({ scans: list, paid: await isPaid(u.email) });
-    }
-    case 'POST plan/toggle': {
-      if (!(await isPaid(u.email))) return E(402, 'paywall');
-      await db.from('plan_items').update({ completed: !!body.completed }).eq('id', body.id).eq('user_email', u.email);
-      return J({ ok: true });
-    }
-    case 'GET chat': {
-      if (!(await isPaid(u.email))) return J({ messages: [] });
-      const { data } = await db.from('chat_messages').select('role,content').eq('user_email', u.email).order('created_at').limit(100);
-      return J({ messages: data || [] });
-    }
-    case 'POST coach': return coach(u, body);
-    case 'POST subscribe': return subscribe(u, body, req);
-    case 'POST cancel': {
-      if (TEST()) { await db.from('subscriptions').update({ status: 'cancelled' }).eq('user_email', u.email); return J({ ok: true }); }
-      const { data: s } = await db.from('subscriptions').select('stripe_subscription_id').eq('user_email', u.email).maybeSingle();
-      if (s?.stripe_subscription_id) await new Stripe(process.env.STRIPE_SECRET_KEY).subscriptions.update(s.stripe_subscription_id, { cancel_at_period_end: true });
-      return J({ ok: true });
-    }
-    case 'POST delete': {
-      await wipePhotos(db, u.email);
-      if (body.mode === 'account') {
-        for (const t of ['plan_items', 'chat_messages', 'scans', 'subscriptions', 'profiles']) await db.from(t).delete().eq('user_email', u.email);
-        await db.auth.admin.deleteUser(u.id);
-      }
-      return J({ ok: true });
-    }
+  if (a === 'cron') {
+    if (!process.env.CRON_SECRET || req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) return E(401, 'Unauthorized');
+    return cron(db);
   }
-  return E(404, 'Not found');
+  const dev = deviceId(req);
+  if (!dev) return E(400, 'Missing device id. Reload the app.');
+  const ip = clientIp(req);
+  try {
+    const burst = await hit('burst', ip);
+    if (!burst.ok) return E(429, 'Too many requests. Wait a minute and try again.');
+    const url = new URL(req.url);
+    const route = `${method} ${a}${b ? '/' + b : ''}`;
+    if (route === 'POST scan/photo') return uploadPhoto(db, dev, req, url);
+    const body = method === 'POST' ? await req.json().catch(() => ({})) : {};
+    switch (route) {
+      case 'GET me': {
+        const [{ data: profile }, scan, coachLeft] = await Promise.all([
+          db.from('profiles').select('gender,age_range,main_goal,onboarded').eq('device_id', dev).maybeSingle(),
+          peek('scan', ip), peek('coach', ip),
+        ]);
+        return J({ profile, limits: { scan, coach: coachLeft }, photo_days: PHOTO_DAYS });
+      }
+      case 'POST profile': {
+        if (!body.age_confirmed || !body.consent_accepted) return E(400, 'Confirm your age and consent to continue.');
+        await db.from('profiles').upsert({ device_id: dev, gender: body.gender, age_range: body.age_range, main_goal: body.main_goal, age_confirmed: true, consent_at: new Date().toISOString(), onboarded: true });
+        return J({ ok: true });
+      }
+      case 'POST settings': {
+        const patch = {};
+        for (const k of ['gender', 'age_range', 'main_goal']) if (typeof body[k] === 'string') patch[k] = body[k].slice(0, 40);
+        await db.from('profiles').update(patch).eq('device_id', dev);
+        return J({ ok: true });
+      }
+      case 'POST scan/start': return startScan(db, dev, ip);
+      case 'POST analyze': return analyze(db, dev, ip, body);
+      case 'GET scan': return getScan(db, dev, url.searchParams.get('id'));
+      case 'GET scans': {
+        const { data } = await db.from('scans').select('id,created_at,overall,tier,front_path').eq('device_id', dev).eq('status', 'complete').order('created_at', { ascending: false }).limit(100);
+        const list = await Promise.all((data || []).map(async s => ({ id: s.id, created_at: s.created_at, overall: Number(s.overall), tier: s.tier, thumb: s.front_path ? (await db.storage.from('photos').createSignedUrl(s.front_path, 3600)).data?.signedUrl || null : null })));
+        return J({ scans: list });
+      }
+      case 'POST plan/toggle': {
+        await db.from('plan_items').update({ completed: !!body.completed }).eq('id', body.id).eq('device_id', dev);
+        return J({ ok: true });
+      }
+      case 'GET chat': {
+        const { data } = await db.from('chat_messages').select('role,content').eq('device_id', dev).order('created_at').limit(100);
+        return J({ messages: data || [] });
+      }
+      case 'POST coach': return coach(db, dev, ip, body);
+      case 'POST delete': {
+        const { data } = await db.from('scans').select('id,front_path,side_path').eq('device_id', dev);
+        await removePhotos(db, data || []);
+        await db.from('scans').update({ front_path: null, side_path: null }).eq('device_id', dev);
+        if (body.mode === 'all') for (const t of ['plan_items', 'chat_messages', 'scans', 'profiles']) await db.from(t).delete().eq('device_id', dev);
+        return J({ ok: true });
+      }
+    }
+    return E(404, 'Not found');
+  } catch (e) {
+    return E(500, e.message || 'Something went wrong.');
+  }
 }
 export const GET = (r, c) => handle(r, c, 'GET');
 export const POST = (r, c) => handle(r, c, 'POST');

@@ -1,6 +1,6 @@
 # Production Guide
 
-This guide covers hosting the backend, testing over a public connection, preparing the mobile project and shipping builds to Google Play and the App Store.
+This guide covers hosting the backend and web app, testing over a public connection, preparing the mobile project and shipping builds to Google Play and the App Store. Maxora is free and has no accounts; fair-use limits per IP address replace subscriptions.
 
 ## Order of operations
 
@@ -12,14 +12,13 @@ This guide covers hosting the backend, testing over a public connection, prepari
 6. Build, test and release on Android.
 7. Build, test and release on iOS.
 8. Prepare the store listings.
-9. Switch billing on and set `TEST_MODE=false`.
-10. Run the final checklist.
+9. Run the final checklist.
 
 ## 1. Accounts and tools
 
 | Item                    | Cost         | Notes                                                                                                  |
 | ----------------------- | ------------ | ------------------------------------------------------------------------------------------------------ |
-| Vercel                  | Free tier    | Hosts the Next.js backend                                                                              |
+| Vercel                  | Free tier    | Hosts the Next.js web app and API                                                                      |
 | Expo account (EAS)      | Free tier    | Free plans cap monthly builds. Check your quota in the EAS dashboard.                                  |
 | Google Play Console     | $25 one time | New personal accounts need a closed test with at least 12 testers for 14 days before production access |
 | Apple Developer Program | $99 per year | Required for every iOS build. Approval takes 1 to 2 days.                                              |
@@ -69,12 +68,12 @@ Add these before the first deploy. Select Production, Preview and Development fo
 | Name                            | Value                                        |
 | ------------------------------- | -------------------------------------------- |
 | `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL                         |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key                            |
 | `SUPABASE_SERVICE_ROLE_KEY`     | Supabase service role key                    |
 | `GROQ_API_KEY`                  | Groq API key                                 |
 | `GROQ_MODEL`                    | A vision-capable Groq model                  |
 | `MOCK_AI`                       | `false`                                      |
-| `TEST_MODE`                     | `true` until billing is live (see section 9) |
+| `CRON_SECRET`                   | Long random string. Vercel Cron sends it to `/api/cron` |
+| `IP_HASH_SALT`                  | Long random string. Keep it stable           |
 
 Copy every other key listed in `backend/.env.example`. Use the exact names from the file.
 
@@ -82,17 +81,18 @@ Rules:
 
 - Never prefix `SUPABASE_SERVICE_ROLE_KEY` with `NEXT_PUBLIC_`.
 - Vercel bakes `NEXT_PUBLIC_` values into the build. Redeploy after changing one.
-- Keep the Supabase setup from the README: run `backend/supabase/schema.sql` and enable anonymous sign-ins.
+- Set up Supabase as the README describes. Run `backend/supabase/schema.sql` on a new project, or the migration in `backend/supabase/migrations/` on an existing one. Anonymous sign-ins are not needed.
 
 Click **Deploy**. Vercel assigns a URL such as `https://maxora-app.vercel.app`.
 
 ### Hardening before real users
 
-- Add per-user rate limiting on every Groq route.
+- Review the per-IP limits in `LIMITS` in `backend/lib/server.js` against your Groq budget.
+- Confirm the daily cron ran: Vercel dashboard, Settings, Cron Jobs.
 - Confirm Row Level Security is on for every table.
 - Confirm the `photos` storage bucket is private.
 - Compare Groq pricing and limits against expected traffic. Set a spending alert.
-- Confirm account deletion removes the auth user, the database rows and the photo files in storage.
+- Confirm **Delete all my data** in Settings removes the database rows and the photo files in storage.
 - Replace the placeholder legal copy. The backend serves legal pages at `/legal/[doc]`. Use the public URL as the privacy policy link.
 
 ## 3. Verify the backend and test through a tunnel
@@ -101,7 +101,7 @@ Click **Deploy**. Vercel assigns a URL such as `https://maxora-app.vercel.app`.
 
 1. Turn off Wi-Fi on your phone.
 2. Open the Vercel URL in a browser.
-3. Confirm the legal page loads.
+3. Confirm the web app loads and `/legal/privacy` opens.
 
 ### Test the app against the hosted backend
 
@@ -111,8 +111,6 @@ You no longer start the backend locally. Start only the mobile app.
 
 ```env
 EXPO_PUBLIC_API_URL=https://maxora-app.vercel.app
-EXPO_PUBLIC_SUPABASE_URL=
-EXPO_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
 2. Start Expo in tunnel mode.
@@ -143,35 +141,50 @@ Use this as the reference. Keep your existing `projectId` and `owner` values.
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#080A0D",
-    "splash": {
-      "image": "./assets/icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0B0B10"
-    },
+    "backgroundColor": "#150D2E",
     "ios": {
-      "supportsTablet": false,
-      "bundleIdentifier": "com.user.maxora",
+      "supportsTablet": true,
+      "bundleIdentifier": "com.arafatanam.maxora",
       "config": {
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
         "NSCameraUsageDescription": "Maxora uses your camera to take the front and side photos for your face rating.",
-        "NSPhotoLibraryUsageDescription": "Maxora reads photos you pick so it can rate your face."
+        "NSPhotoLibraryUsageDescription": "Maxora reads photos you pick so it can rate your face.",
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait"
+        ],
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ]
       }
     },
     "android": {
-      "package": "com.user.maxora",
+      "package": "com.arafatanam.maxora",
       "adaptiveIcon": {
-        "backgroundColor": "#0B0B10",
-        "foregroundImage": "./assets/icon.png"
+        "backgroundColor": "#2B1B5A",
+        "foregroundImage": "./assets/adaptive-icon.png"
       },
-      "permissions": ["android.permission.CAMERA"]
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
-      "favicon": "./assets/icon.png"
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 140,
+          "resizeMode": "contain",
+          "backgroundColor": "#2B1B5A"
+        }
+      ],
       [
         "expo-image-picker",
         {
@@ -180,6 +193,7 @@ Use this as the reference. Keep your existing `projectId` and `owner` values.
           "microphonePermission": false
         }
       ],
+      "expo-font",
       "expo-sharing",
       "expo-status-bar"
     ],
@@ -200,8 +214,10 @@ What each rule prevents:
 - **`microphonePermission: false`.** The `expo-image-picker` plugin adds the microphone permission otherwise.
 - **Permission strings.** Keep them specific. Apple rejects vague strings.
 - **`usesNonExemptEncryption: false`.** Skips the export compliance question on every iOS upload.
-- **Icon.** Use a 1024x1024 PNG with no transparency. Apple rejects icons with an alpha channel.
-- **Adaptive icon.** Android crops the foreground layer. Keep the logo inside the center 66 percent of the canvas.
+- **Icon.** `assets/icon.png` is a 1024x1024 render of `assets/icon.svg` with a solid background. Apple rejects icons with transparency.
+- **Adaptive icon.** `assets/adaptive-icon.png` is the gem alone on a transparent canvas, inside the center 66 percent that Android keeps when cropping. The background color comes from `adaptiveIcon.backgroundColor`.
+- **Splash.** `expo-splash-screen` shows `assets/splash-icon.png` on `#2B1B5A`. The app holds the splash until fonts and the first API call finish.
+- **iPad.** `supportsTablet` is on. iPhones stay portrait; iPads rotate freely because Apple requires all orientations for iPad multitasking. Upload iPad screenshots (13-inch) in App Store Connect.
 - **Version.** Use `version` for the public number. EAS manages build numbers (see below).
 
 ### `mobile/eas.json`
@@ -250,22 +266,16 @@ npx expo install --check
 
 Fix every error they report. Then commit all changes. EAS builds from your project files and warns about uncommitted changes.
 
-Open `mobile/src/purchases.js`. Confirm the RevenueCat init step skips setup when no key exists or when `TEST_MODE` is on. Real builds load native modules, and a missing key crashes some setups at launch.
-
 ## 5. EAS environment variables
 
-EAS keeps environments separate. Create the same three variables in both `preview` and `production`.
+EAS keeps environments separate. Create the API URL in both `preview` and `production`. It is the only variable the app needs.
 
 ```powershell
 cd mobile
 
 eas env:create --environment preview --name EXPO_PUBLIC_API_URL --value https://maxora-app.vercel.app --visibility plaintext
-eas env:create --environment preview --name EXPO_PUBLIC_SUPABASE_URL --value YOUR_SUPABASE_URL --visibility plaintext
-eas env:create --environment preview --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value YOUR_ANON_KEY --visibility plaintext
 
 eas env:create --environment production --name EXPO_PUBLIC_API_URL --value https://maxora-app.vercel.app --visibility plaintext
-eas env:create --environment production --name EXPO_PUBLIC_SUPABASE_URL --value YOUR_SUPABASE_URL --visibility plaintext
-eas env:create --environment production --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value YOUR_ANON_KEY --visibility plaintext
 ```
 
 Verify both:
@@ -279,9 +289,8 @@ Rules:
 
 - Replace every placeholder. A value such as `https://your-project.vercel.app` breaks every API call.
 - The message "No environment variables ... found for the production environment" means production is empty. Create the variables before any production build.
-- `EXPO_PUBLIC_` values ship inside the app and anyone extracts them. The anon key is public by design. Never place the service role key, Groq key or Stripe secrets here.
+- `EXPO_PUBLIC_` values ship inside the app and anyone extracts them. Never place the service role key, Groq key or any other secret here.
 - Changing a variable needs a new build. Builds read values at build time.
-- If `purchases.js` reads RevenueCat keys, add them to both environments. Check the file for the exact names. RevenueCat uses separate public SDK keys for iOS and Android.
 
 ## 6. Android
 
@@ -415,12 +424,12 @@ Both stores need:
 
 Declare these data types:
 
-- Anonymous account identifier from Supabase Auth.
+- A random device identifier created by the app (no account).
 - Profile details from onboarding.
 - Front and side face photos.
 - Scan results, history and coaching chat content.
 - Photos and prompts sent to Groq as a third-party processor.
-- Purchase data from RevenueCat and Stripe.
+- A one-way hash of the IP address, kept for one day for rate limiting.
 
 Asset checklist:
 
@@ -431,8 +440,8 @@ Asset checklist:
 
 Apple extras:
 
-- Apple requires in-app account deletion when users create accounts. Confirm the guideline applies to anonymous accounts and test the flow.
-- Add reviewer notes. Explain the anonymous sign-in and how to reach every feature.
+- There are no accounts, so the account-deletion rule does not apply. In-app data deletion is still available in Settings.
+- Add reviewer notes. Explain that the app is free, needs no sign-in, and has a daily scan limit per network.
 
 Review risk for face-rating apps:
 
@@ -441,22 +450,14 @@ Review risk for face-rating apps:
 - Use self-improvement wording in the listing. Avoid wording that judges or ranks people.
 - Test every one of these features in the real build before submission.
 
-## 9. Billing and `TEST_MODE`
+## 9. Final checklist
 
-The README states the rule: set `TEST_MODE=false` only after real Stripe prices, Stripe webhooks and RevenueCat entitlements exist.
-
-- Mobile store builds sell subscriptions through RevenueCat with Apple and Google billing. Apple requires in-app purchase for digital subscriptions sold inside an iOS app.
-- Create subscription products in App Store Connect and Play Console. Connect them to RevenueCat entitlements.
-- The backend must read the entitlement status your mobile purchases create.
-- Read the backend code that checks `TEST_MODE`. Confirm what the flag bypasses. A free launch with `TEST_MODE=true` is acceptable only if the code still limits scans per user.
-
-To switch:
-
-1. Set `TEST_MODE=false` in Vercel for Production.
-2. Redeploy the backend.
-3. Run a full purchase test in a real build with a sandbox account.
-
-Decide one thing early: launch free first or launch with subscriptions. A free launch removes billing review risk. Add billing in a later update.
+- [ ] Migration or schema applied in Supabase, and the `rate_limits` table exists.
+- [ ] `CRON_SECRET` and `IP_HASH_SALT` set in Vercel. The cron job shows in Settings, Cron Jobs.
+- [ ] A full scan works on the web app and on a real phone build.
+- [ ] The sixth scan in one day from the same network is refused with a clear message.
+- [ ] Settings, **Delete all my data** removes rows and photos and returns to the welcome screen.
+- [ ] Legal pages replaced with reviewed copy.
 
 ## Troubleshooting
 
@@ -464,12 +465,13 @@ Decide one thing early: launch free first or launch with subscriptions. A free l
 | ----------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------- |
 | Expo Go "request timed out" on mobile data      | Metro runs on your PC                        | Use `--tunnel` or install a preview build                                 |
 | "No team associated with your Apple account"    | No paid Apple enrollment                     | Enroll in the Apple Developer Program                                     |
-| "No environment variables found" for production | Production environment is empty              | Create the three variables (section 5)                                    |
+| "No environment variables found" for production | Production environment is empty              | Create the API URL variable (section 5)                                   |
 | App shows API errors in a build                 | Placeholder or missing `EXPO_PUBLIC_API_URL` | Fix the variable and rebuild                                              |
-| App crashes at launch in a build                | Missing variable or `purchases.js` init      | Check both. Read the EAS build logs. On Android, run `adb logcat`.        |
+| App crashes at launch in a build                | Missing `EXPO_PUBLIC_API_URL`                 | Set it and rebuild. Read the EAS build logs. On Android, `adb logcat`.     |
 | APK does not install                            | Unknown sources blocked                      | Allow installs from your browser in Android settings                      |
 | iOS preview build does not install              | Device not registered or Developer Mode off  | Run `eas device:create`, rebuild and turn on Developer Mode               |
 | Vercel variable change has no effect            | Old deployment                               | Redeploy the project                                                      |
+| "Rate limiter unavailable" error               | Migration not run                            | Run the SQL migration in Supabase                                         |
 | `Debugger listening` lines in PowerShell        | Node inspector option in your environment    | Harmless. Run `$env:NODE_OPTIONS=""` to remove the lines for the session. |
 
 ## Command reference
