@@ -21,9 +21,9 @@ function Chart({ pts }) {
   const labels = pts.length <= 6 ? pts.map((_, i) => i) : [0, Math.floor((pts.length - 1) / 2), pts.length - 1];
   return <div ref={ref} style={{ width: '100%' }}>
     {W > 0 && <svg className="chart" width={W} height={H} role="img" aria-label={`Overall score over ${pts.length} scans, from ${pts[0].overall.toFixed(1)} to ${pts.at(-1).overall.toFixed(1)}`}>
-      {[0, 5, 10].map(v => <g key={v}><line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke="rgba(185,167,255,0.12)" strokeDasharray={v === 0 ? '' : '3 4'} /><text x={L - 10} y={y(v) + 4} textAnchor="end">{v}</text></g>)}
+      {[0, 5, 10].map(v => <g key={v}><line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke="rgba(163,158,149,0.16)" strokeDasharray={v === 0 ? '' : '3 4'} /><text x={L - 10} y={y(v) + 4} textAnchor="end">{v}</text></g>)}
       <polyline points={line} fill="none" stroke="var(--light)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-      {pts.map((p, i) => <circle key={p.id} cx={x(i)} cy={y(p.overall)} r={i === pts.length - 1 ? 5 : 3.5} fill={i === pts.length - 1 ? 'var(--accent)' : 'var(--light)'} stroke="var(--surface)" strokeWidth="2" />)}
+      {pts.map((p, i) => <circle key={p.id} cx={x(i)} cy={y(p.overall)} r={i === pts.length - 1 ? 5 : 3.5} fill={i === pts.length - 1 ? 'var(--accent-fg)' : 'var(--light)'} stroke="var(--surface)" strokeWidth="2" />)}
       {labels.map(i => <text key={i} x={x(i)} y={H - 6} textAnchor={i === 0 && pts.length > 1 ? 'start' : i === pts.length - 1 && pts.length > 1 ? 'end' : 'middle'}>{new Date(pts[i].created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</text>)}
     </svg>}
   </div>;

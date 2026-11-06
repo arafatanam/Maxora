@@ -7,7 +7,7 @@ import { T, Card, Row, Btn, Chip, Chips, Head, Section, Note, LegalModal, C, nic
 const FIELDS = [['gender', 'Gender'], ['age_range', 'Age range'], ['main_goal', 'Main goal']];
 
 const LinkRow = ({ label, onPress, external, last }) => <Pressable onPress={onPress} accessibilityRole={external ? 'link' : 'button'}
-  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', minHeight: 50, paddingHorizontal: 18, backgroundColor: pressed ? 'rgba(185,167,255,0.07)' : 'transparent', borderBottomWidth: last ? 0 : 1, borderBottomColor: C.line })}>
+  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', minHeight: 50, paddingHorizontal: 18, backgroundColor: pressed ? 'rgba(163,158,149,0.07)' : 'transparent', borderBottomWidth: last ? 0 : 1, borderBottomColor: C.line })}>
   <T style={{ flex: 1 }}>{label}</T>{external ? <ExternalLink size={16} color={C.fg3} /> : <ChevronRight size={18} color={C.fg3} />}
 </Pressable>;
 

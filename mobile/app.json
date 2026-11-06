@@ -7,7 +7,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#150D2E",
+    "backgroundColor": "#161513",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.arafatanam.maxora",
@@ -48,7 +48,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 140,
           "resizeMode": "contain",
-          "backgroundColor": "#2B1B5A"
+          "backgroundColor": "#161513"
         }
       ],
       [

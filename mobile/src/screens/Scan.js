@@ -29,7 +29,7 @@ export function Scan({ me, go, onDone, reload }) {
     style={({ pressed }) => ({ flex: 1, aspectRatio: 3 / 4, borderRadius: R.surface, borderCurve: 'continuous', overflow: 'hidden', borderWidth: 1.5, borderStyle: f[k] ? 'solid' : 'dashed', borderColor: f[k] ? C.line : C.lineStrong, backgroundColor: pressed ? C.card : C.raised, alignItems: 'center', justifyContent: 'center' })}>
     {f[k] ? <>
       <Image source={{ uri: f[k].uri }} style={{ position: 'absolute', width: '100%', height: '100%' }} resizeMode="cover" />
-      <View style={{ position: 'absolute', left: 8, bottom: 8, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, height: 28, borderRadius: R.pill, backgroundColor: 'rgba(21,13,46,0.86)' }}><Check size={13} color={C.accent} /><T style={{ fontSize: 12, fontFamily: 'Inter_500Medium' }}>{label}</T></View>
+      <View style={{ position: 'absolute', left: 8, bottom: 8, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, height: 28, borderRadius: R.pill, backgroundColor: 'rgba(22,21,19,0.86)' }}><Check size={13} color={C.accentFg} /><T style={{ fontSize: 12, fontFamily: 'Inter_500Medium' }}>{label}</T></View>
     </> : <View style={{ alignItems: 'center', gap: 8, padding: 12 }}>
       <View style={{ width: 48, height: 48, borderRadius: R.pill, backgroundColor: C.card2, alignItems: 'center', justifyContent: 'center' }}><ImagePlus size={22} color={C.light} /></View>
       <T k="h3" style={{ textAlign: 'center' }}>{label}</T>
@@ -100,7 +100,7 @@ function Analyzing({ files, done, retake }) {
   return <View style={{ gap: 24, paddingTop: 8 }}>
     <View onLayout={e => setH(e.nativeEvent.layout.height)} style={{ aspectRatio: 4 / 5, maxHeight: 420, width: '100%', borderRadius: R.surface, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: C.card, borderWidth: 1, borderColor: C.line }}>
       <Image source={{ uri: files.front.uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-      {!err && <Animated.View style={{ position: 'absolute', left: 0, right: 0, height: 2, backgroundColor: C.accent, boxShadow: '0 0 16px 2px rgba(94,242,194,0.55)', transform: [{ translateY: y }] }} />}
+      {!err && <Animated.View style={{ position: 'absolute', left: 0, right: 0, height: 2, backgroundColor: C.accentFg, boxShadow: '0 0 16px 2px rgba(163,184,217,0.55)', transform: [{ translateY: y }] }} />}
     </View>
     {err ? <View style={{ gap: 12 }}>
       <ErrorText>{err}</ErrorText>
@@ -109,7 +109,7 @@ function Analyzing({ files, done, retake }) {
     </View> : <View style={{ gap: 14 }}>
       <T k="h1" accessibilityLiveRegion="polite">{STEPS[Math.min(step, 3)]}…</T>
       {STEPS.map((t, i) => <View key={t} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <View style={{ width: 22, height: 22, borderRadius: R.pill, borderWidth: 1.5, borderColor: i <= step ? C.accent : C.lineStrong, backgroundColor: i < step ? C.accent : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ width: 22, height: 22, borderRadius: R.pill, borderWidth: 1.5, borderColor: i <= step ? C.accentFg : C.lineStrong, backgroundColor: i < step ? C.accent : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
           {i < step && <Check size={13} strokeWidth={3} color={C.onAccent} />}</View>
         <T style={{ color: i === step ? C.fg : i < step ? C.fg2 : C.fg3 }}>{t}</T>
       </View>)}

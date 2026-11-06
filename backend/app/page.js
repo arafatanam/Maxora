@@ -88,7 +88,7 @@ export default function App() {
     </aside>
     <header className="topbar">
       <a className="brand" href="#/home"><Logo size={32} />Maxora</a>
-      <a className="icon-btn" href="#/settings" aria-label="Settings" aria-current={active === 'settings' ? 'page' : undefined} style={active === 'settings' ? { color: 'var(--accent)' } : undefined}><SettingsIcon size={22} aria-hidden /></a>
+      <a className="icon-btn" href="#/settings" aria-label="Settings" aria-current={active === 'settings' ? 'page' : undefined} style={active === 'settings' ? { color: 'var(--accent-fg)' } : undefined}><SettingsIcon size={22} aria-hidden /></a>
     </header>
     <main className="main" id="main" tabIndex={-1} style={{ outline: 'none' }}>
       <div className={`content${NARROW.includes(v) ? ' narrow' : ''}`} key={v + (id || '')}>{screen}</div>

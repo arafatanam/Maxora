@@ -30,7 +30,7 @@ export default function Results({ s, isLatest, go, back }) {
 
     {!!s.summary && <T style={{ fontSize: 17, lineHeight: 26, marginTop: 24 }}>{s.summary}</T>}
     {top.length > 0 && <Section title="Do this first" right={isLatest && <Btn small variant="ghost" onPress={() => go('plan')}>Full plan</Btn>}>
-      <Card>{top.map((p, i) => <View key={p.id} style={{ flexDirection: 'row', gap: 12 }}><T k="num" style={{ color: C.accent, width: 18 }}>{i + 1}</T><View style={{ flex: 1 }}><T k="h3">{p.title}</T><T k="muted" style={{ fontSize: 14 }}>{p.reason}</T></View></View>)}</Card>
+      <Card>{top.map((p, i) => <View key={p.id} style={{ flexDirection: 'row', gap: 12 }}><T k="num" style={{ color: C.accentFg, width: 18 }}>{i + 1}</T><View style={{ flex: 1 }}><T k="h3">{p.title}</T><T k="muted" style={{ fontSize: 14 }}>{p.reason}</T></View></View>)}</Card>
     </Section>}
 
     <Section title="Feature scores" right={<Badge>AI estimate</Badge>}>
@@ -41,7 +41,7 @@ export default function Results({ s, isLatest, go, back }) {
       </Card>)}
     </Section>
 
-    <Section title="Strengths"><Card>{(s.strengths || []).map(x => <View key={x} style={{ flexDirection: 'row', gap: 10 }}><Plus size={16} color={C.accent} style={{ marginTop: 3 }} /><T style={{ flex: 1 }}>{x}</T></View>)}</Card></Section>
+    <Section title="Strengths"><Card>{(s.strengths || []).map(x => <View key={x} style={{ flexDirection: 'row', gap: 10 }}><Plus size={16} color={C.accentFg} style={{ marginTop: 3 }} /><T style={{ flex: 1 }}>{x}</T></View>)}</Card></Section>
     <Section title="To work on"><Card>{(s.weaknesses || []).map(x => <View key={x} style={{ flexDirection: 'row', gap: 10 }}><Minus size={16} color={C.light} style={{ marginTop: 3 }} /><T style={{ flex: 1 }}>{x}</T></View>)}</Card></Section>
     {s.face_profile && <Section title="Face profile"><Card style={{ gap: 0, paddingVertical: 6 }}>{Object.entries(s.face_profile).map(([k, v], i, a) =>
       <Row key={k} style={{ paddingVertical: 12, borderBottomWidth: i < a.length - 1 ? 1 : 0, borderBottomColor: C.line }}><T k="muted">{nice(k)}</T><T style={{ fontFamily: 'Inter_500Medium', flexShrink: 1, textAlign: 'right' }}>{nice(String(v))}</T></Row>)}</Card></Section>}

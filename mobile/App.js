@@ -98,7 +98,7 @@ function Shell() {
       <View style={{ height: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Pressable onPress={() => go('home')} accessibilityRole="button" accessibilityLabel="Maxora home" style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}><Logo size={30} /><Text style={{ color: C.fg, fontFamily: F.head, fontSize: 17 }}>Maxora</Text></Pressable>
         <Pressable onPress={() => go('settings')} accessibilityRole="button" accessibilityLabel="Settings" hitSlop={8} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -10 }}>
-          <SettingsIcon size={22} color={route.v === 'settings' ? C.accent : C.fg2} /></Pressable>
+          <SettingsIcon size={22} color={route.v === 'settings' ? C.accentFg : C.fg2} /></Pressable>
       </View>
     </View>}
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -112,8 +112,8 @@ function Shell() {
         const on = active === k;
         return <Pressable key={k} onPress={() => { if (!on) { tap(); go(k); } else sc.current?.scrollTo({ y: 0, animated: true }); }} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={label}
           style={{ flex: 1, height: 58, alignItems: 'center', justifyContent: 'center', gap: 3 }}>
-          <Icon size={22} color={on ? C.accent : C.fg3} />
-          <Text style={{ color: on ? C.accent : C.fg3, fontFamily: F.medium, fontSize: 11 }}>{label}</Text>
+          <Icon size={22} color={on ? C.accentFg : C.fg3} />
+          <Text style={{ color: on ? C.accentFg : C.fg3, fontFamily: F.medium, fontSize: 11 }}>{label}</Text>
         </Pressable>;
       })}
     </View>}

@@ -20,13 +20,13 @@ export default function Plan({ s, go, setS }) {
     <Head title="Improvement plan" sub="Ranked by impact for the effort. Tick actions off as you build them into your routine." />
     <Card style={{ gap: 10 }}>
       <Row><T k="h2">{done === plan.length && plan.length ? 'All done' : 'Progress'}</T><T k="num">{done} / {plan.length}</T></Row>
-      <Bar v={done} max={plan.length || 1} color={C.accent} />
+      <Bar v={done} max={plan.length || 1} color={C.accentFg} />
     </Card>
     {groups.map(([title, items]) => <Section key={title} title={title}>
       <Card style={{ paddingVertical: 4, gap: 0 }}>
         {items.map((p, i) => <Pressable key={p.id} onPress={() => tog(p)} accessibilityRole="checkbox" accessibilityState={{ checked: !!p.completed }} accessibilityLabel={p.title}
           style={({ pressed }) => ({ flexDirection: 'row', gap: 14, paddingVertical: 14, borderBottomWidth: i < items.length - 1 ? 1 : 0, borderBottomColor: C.line, opacity: pressed ? 0.7 : 1 })}>
-          <View style={{ width: 22, height: 22, marginTop: 1, borderRadius: 7, borderWidth: 1.5, borderColor: p.completed ? C.accent : C.lineStrong, backgroundColor: p.completed ? C.accent : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: 22, height: 22, marginTop: 1, borderRadius: 7, borderWidth: 1.5, borderColor: p.completed ? C.accentFg : C.lineStrong, backgroundColor: p.completed ? C.accent : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
             {p.completed && <Check size={14} strokeWidth={3} color={C.onAccent} />}</View>
           <View style={{ flex: 1, gap: 2 }}>
             <T k="h3" style={p.completed ? { color: C.fg3, textDecorationLine: 'line-through' } : null}>{p.title}</T>

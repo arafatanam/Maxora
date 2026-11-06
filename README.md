@@ -51,8 +51,14 @@ Web app (backend/app/page.js)      Expo app (mobile/)
 
 ## Design
 
-- Palette: dark `#2B1B5A`, light `#B9A7FF`, accent `#5EF2C2`. The accent is used
-  only for primary actions, the active navigation item, and progress.
+- Palette: dark `#161513`, light `#A39E95` (a warm grey a few steps up from dark),
+  accent `#223A5E` (navy). The navy is only used as a fill behind light text, such
+  as primary buttons and selected items. Where the accent appears as text, icons,
+  outlines or progress, the app uses its pale tint `#A3B8D9`, because navy is not
+  readable on the dark background. Cards step up through `#1D1C19`, `#24221F`
+  and `#2E2C28`.
+- The app icon keeps its own colours (purple and mint) and is not tied to the UI
+  palette.
 - Type: Sora for titles and headings, Inter for body text.
 - Icon: [`mobile/assets/icon.svg`](./mobile/assets/icon.svg) is the source. The
   PNG app icon, Android adaptive icon, splash image, favicons and web manifest

@@ -10,7 +10,7 @@ export const metadata = {
   applicationName: 'Maxora',
   appleWebApp: { title: 'Maxora', statusBarStyle: 'black-translucent' },
 };
-export const viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#150D2E', colorScheme: 'dark' };
+export const viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#161513', colorScheme: 'dark' };
 
 export default function Root({ children }) {
   return <html lang="en" className={`${inter.variable} ${sora.variable}`}><body>{children}</body></html>;

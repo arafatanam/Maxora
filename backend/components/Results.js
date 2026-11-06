@@ -4,7 +4,7 @@ import { Download, Plus, Minus, ArrowRight, MessagesSquare, ImageOff } from 'luc
 import { api, nice, FEATS, DISCLAIMER, fmtDate, tone } from '@/lib/client';
 import { Reveal, PageHead, Gauge, Bar, Score, Skeleton, Alert } from './ui';
 
-const TONES = { hi: '#5EF2C2', mid: '#B9A7FF', lo: '#A59BC9' };
+const TONES = { hi: '#A3B8D9', mid: '#A39E95', lo: '#7D786F' };
 import { FACETS, CORE } from './Logo';
 
 // Renders a 1080x1350 share image in the brand palette and downloads it.
@@ -13,8 +13,8 @@ async function shareCard(s) {
   await document.fonts?.ready;
   const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H;
   const x = c.getContext('2d');
-  x.fillStyle = '#150D2E'; x.fillRect(0, 0, W, H);
-  x.fillStyle = '#20154A'; x.beginPath(); x.roundRect(60, 60, W - 120, H - 120, 40); x.fill();
+  x.fillStyle = '#161513'; x.fillRect(0, 0, W, H);
+  x.fillStyle = '#24221F'; x.beginPath(); x.roundRect(60, 60, W - 120, H - 120, 40); x.fill();
   x.save(); x.translate(110, 110); x.scale(0.9, 0.9);
   x.fillStyle = '#2B1B5A'; x.beginPath(); x.roundRect(0, 0, 100, 100, 22); x.fill();
   x.strokeStyle = '#2B1B5A'; x.lineWidth = 2.4; x.lineJoin = 'round';
@@ -23,20 +23,20 @@ async function shareCard(s) {
     x.beginPath(); pts.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.closePath(); x.fillStyle = f; x.fill(); x.stroke();
   });
   x.restore();
-  x.fillStyle = '#F5F3FF'; x.font = `600 44px ${head}`; x.fillText('Maxora', 225, 172);
+  x.fillStyle = '#F4F1EC'; x.font = `600 44px ${head}`; x.fillText('Maxora', 225, 172);
   x.fillStyle = TONES[tone(s.overall_score)]; x.font = `600 260px ${head}`; x.fillText(s.overall_score.toFixed(1), 104, 520);
-  x.fillStyle = 'rgba(245,243,255,0.56)'; x.font = `400 34px ${body}`; x.fillText('out of 10', 112, 580);
-  x.fillStyle = '#F5F3FF'; x.font = `600 64px ${head}`; x.fillText(s.tier_label, 110, 700);
-  x.fillStyle = '#B9A7FF'; x.font = `500 36px ${body}`; x.fillText(s.psl_tier, 112, 760);
+  x.fillStyle = 'rgba(244,241,236,0.56)'; x.font = `400 34px ${body}`; x.fillText('out of 10', 112, 580);
+  x.fillStyle = '#F4F1EC'; x.font = `600 64px ${head}`; x.fillText(s.tier_label, 110, 700);
+  x.fillStyle = '#A39E95'; x.font = `500 36px ${body}`; x.fillText(s.psl_tier, 112, 760);
   const top = Object.entries(s.feature_scores || {}).sort((a, b) => b[1].score - a[1].score).slice(0, 3);
   top.forEach(([k, v], i) => {
     const y = 880 + i * 110;
-    x.fillStyle = 'rgba(245,243,255,0.74)'; x.font = `400 36px ${body}`; x.fillText(nice(k), 112, y);
+    x.fillStyle = 'rgba(244,241,236,0.74)'; x.font = `400 36px ${body}`; x.fillText(nice(k), 112, y);
     x.fillStyle = TONES[tone(v.score)]; x.font = `600 40px ${head}`; x.textAlign = 'right'; x.fillText(v.score.toFixed(1), W - 112, y); x.textAlign = 'left';
-    x.fillStyle = 'rgba(185,167,255,0.14)'; x.beginPath(); x.roundRect(112, y + 26, W - 224, 10, 5); x.fill();
+    x.fillStyle = 'rgba(163,158,149,0.16)'; x.beginPath(); x.roundRect(112, y + 26, W - 224, 10, 5); x.fill();
     x.fillStyle = TONES[tone(v.score)]; x.beginPath(); x.roundRect(112, y + 26, (W - 224) * v.score / 10, 10, 5); x.fill();
   });
-  x.fillStyle = 'rgba(245,243,255,0.56)'; x.font = `400 28px ${body}`; x.fillText('AI estimate · maxora', 112, H - 120);
+  x.fillStyle = 'rgba(244,241,236,0.56)'; x.font = `400 28px ${body}`; x.fillText('AI estimate · maxora', 112, H - 120);
   const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = 'maxora-score.png'; a.click();
 }
 
@@ -84,7 +84,7 @@ export default function Results({ id, latest, go }) {
         </section>
 
         <div className="grid-2">
-          <section className="card"><h2 style={{ marginBottom: 14 }}>Strengths</h2><ul className="list">{(s.strengths || []).map(x => <li key={x}><Plus size={16} color="var(--accent)" aria-hidden /><span>{x}</span></li>)}</ul></section>
+          <section className="card"><h2 style={{ marginBottom: 14 }}>Strengths</h2><ul className="list">{(s.strengths || []).map(x => <li key={x}><Plus size={16} color="var(--accent-fg)" aria-hidden /><span>{x}</span></li>)}</ul></section>
           <section className="card"><h2 style={{ marginBottom: 14 }}>To work on</h2><ul className="list">{(s.weaknesses || []).map(x => <li key={x}><Minus size={16} color="var(--light)" aria-hidden /><span>{x}</span></li>)}</ul></section>
         </div>
 

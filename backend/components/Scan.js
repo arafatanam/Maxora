@@ -15,7 +15,7 @@ function Drop({ k, label, hint, file, preview, onPick }) {
     <input className="sr-only" type="file" accept="image/*" onChange={e => { onPick(k, e.target.files[0]); e.target.value = ''; }} aria-label={`${label}. ${hint}`} />
     {preview ? <>
       <img src={preview} alt={`${label} preview`} />
-      <span className="drop-label"><Check size={14} color="var(--accent)" aria-hidden />{label}</span>
+      <span className="drop-label"><Check size={14} color="var(--accent-fg)" aria-hidden />{label}</span>
       <span className="drop-change">Change</span>
     </> : <span className="drop-empty">
       <span className="drop-icon"><ImagePlus size={24} aria-hidden /></span>

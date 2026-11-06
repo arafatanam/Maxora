@@ -143,7 +143,7 @@ Use this as the reference. Keep your existing `projectId` and `owner` values.
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#150D2E",
+    "backgroundColor": "#161513",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.arafatanam.maxora",
@@ -184,7 +184,7 @@ Use this as the reference. Keep your existing `projectId` and `owner` values.
           "image": "./assets/splash-icon.png",
           "imageWidth": 140,
           "resizeMode": "contain",
-          "backgroundColor": "#2B1B5A"
+          "backgroundColor": "#161513"
         }
       ],
       [
@@ -218,7 +218,7 @@ What each rule prevents:
 - **`usesNonExemptEncryption: false`.** Skips the export compliance question on every iOS upload.
 - **Icon.** `assets/icon.png` is a 1024x1024 render of `assets/icon.svg` with a solid background. Apple rejects icons with transparency.
 - **Adaptive icon.** `assets/adaptive-icon.png` is the gem alone on a transparent canvas, inside the center 66 percent that Android keeps when cropping. The background color comes from `adaptiveIcon.backgroundColor`.
-- **Splash.** `expo-splash-screen` shows `assets/splash-icon.png` on `#2B1B5A`. The app holds the splash until fonts and the first API call finish.
+- **Splash.** `expo-splash-screen` shows `assets/splash-icon.png` on `#161513`. The app holds the splash until fonts and the first API call finish.
 - **iPad.** `supportsTablet` is on. iPhones stay portrait; iPads rotate freely because Apple requires all orientations for iPad multitasking. Upload iPad screenshots (13-inch) in App Store Connect.
 - **Version.** Use `version` for the public number. EAS manages build numbers (see below).
 

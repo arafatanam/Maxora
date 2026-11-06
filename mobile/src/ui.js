@@ -5,15 +5,17 @@ import * as Haptics from 'expo-haptics';
 import { AlertCircle, Info, X } from './icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Brand: dark #2B1B5A, light #B9A7FF, accent #5EF2C2. Headings: Sora. Body: Inter.
+// Brand: dark #161513, light #A39E95 (warm grey), accent #223A5E (navy) with tint #A3B8D9. The app icon keeps its own colours. Headings: Sora. Body: Inter.
 // Shape rule: controls 12, surfaces 16, chips and badges are pills. The accent is reserved for
 // the primary action, the active tab and progress.
 export const C = {
-  dark: '#2B1B5A', light: '#B9A7FF', accent: '#5EF2C2', onAccent: '#1D1240',
-  bg: '#150D2E', raised: '#1A1139', card: '#20154A', card2: '#2B1B5A',
-  line: 'rgba(185,167,255,0.13)', lineStrong: 'rgba(185,167,255,0.26)', track: 'rgba(185,167,255,0.13)',
-  fg: '#F5F3FF', fg2: 'rgba(245,243,255,0.74)', fg3: 'rgba(245,243,255,0.56)',
-  danger: '#FFA3B5', dangerLine: 'rgba(255,163,181,0.38)', lo: '#A59BC9',
+  dark: '#161513', light: '#A39E95', onAccent: '#F4F1EC',
+  // Navy is a fill behind light text only. Text, icons, outlines and progress use the pale tint.
+  accent: '#223A5E', accentFg: '#A3B8D9',
+  bg: '#161513', raised: '#1D1C19', card: '#24221F', card2: '#2E2C28',
+  line: 'rgba(163,158,149,0.16)', lineStrong: 'rgba(163,158,149,0.3)', track: 'rgba(163,158,149,0.16)',
+  fg: '#F4F1EC', fg2: 'rgba(244,241,236,0.74)', fg3: 'rgba(244,241,236,0.56)',
+  danger: '#F0A39A', dangerLine: 'rgba(240,163,154,0.38)', lo: '#7D786F',
 };
 export const F = { head: 'Sora_600SemiBold', headBold: 'Sora_700Bold', body: 'Inter_400Regular', medium: 'Inter_500Medium', semi: 'Inter_600SemiBold', italic: 'Inter_400Regular_Italic', semiItalic: 'Inter_600SemiBold_Italic' };
 export const R = { control: 12, surface: 16, pill: 999 };
@@ -23,7 +25,7 @@ export const FEATS = ['symmetry', 'jawline', 'cheekbones', 'eye_area', 'nose', '
 export const CATS = ['grooming', 'skincare', 'hair', 'fitness', 'posture', 'style', 'habits'];
 export const OPTIONS = { gender: ['male', 'female', 'other'], age_range: ['18 to 24', '25 to 34', '35 to 44', '45 plus'], main_goal: ['Better jawline', 'Better skin', 'Better hair', 'Overall glow up', 'Social confidence'] };
 export const DISC = 'Scores are AI estimates for self-improvement. They do not define your worth and are not medical advice.';
-export const tone = s => s >= 7 ? C.accent : s >= 5 ? C.light : C.lo;
+export const tone = s => s >= 7 ? C.accentFg : s >= 5 ? C.light : C.lo;
 export const fmtDate = d => new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 export const fmtTime = d => new Date(d).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 export const tap = () => Haptics.selectionAsync().catch(() => {});
@@ -46,7 +48,7 @@ export const Card = ({ style, ...p }) => <View style={[{ backgroundColor: C.card
 export const Row = ({ style, ...p }) => <View style={[{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }, style]} {...p} />;
 
 const BTN = {
-  primary: { bg: C.accent, fg: C.onAccent, border: C.accent },
+  primary: { bg: C.accent, fg: C.onAccent, border: 'rgba(163,184,217,0.22)' },
   secondary: { bg: 'transparent', fg: C.fg, border: C.lineStrong },
   danger: { bg: 'transparent', fg: C.danger, border: C.dangerLine },
   ghost: { bg: 'transparent', fg: C.light, border: 'transparent' },
@@ -61,11 +63,11 @@ export function Btn({ children, onPress, variant = 'primary', small, disabled, i
 }
 
 export const Chip = ({ on, onPress, children }) => <Pressable accessibilityRole="button" accessibilityState={{ selected: !!on }} onPress={() => { tap(); onPress(); }}
-  style={({ pressed }) => ({ minHeight: 40, justifyContent: 'center', paddingHorizontal: 16, borderRadius: R.pill, borderWidth: 1, borderColor: on ? C.accent : C.lineStrong, backgroundColor: on ? 'rgba(94,242,194,0.10)' : pressed ? 'rgba(185,167,255,0.07)' : 'transparent' })}>
+  style={({ pressed }) => ({ minHeight: 40, justifyContent: 'center', paddingHorizontal: 16, borderRadius: R.pill, borderWidth: 1, borderColor: on ? C.accentFg : C.lineStrong, backgroundColor: on ? 'rgba(163,184,217,0.12)' : pressed ? 'rgba(163,158,149,0.07)' : 'transparent' })}>
   <Text style={{ color: on ? C.fg : C.fg2, fontFamily: F.medium, fontSize: 14 }}>{children}</Text></Pressable>;
 export const Chips = ({ children }) => <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{children}</View>;
-export const Badge = ({ children, accent }) => <View style={{ alignSelf: 'flex-start', paddingHorizontal: 10, height: 26, justifyContent: 'center', borderRadius: R.pill, backgroundColor: accent ? 'rgba(94,242,194,0.12)' : 'rgba(185,167,255,0.10)' }}>
-  <Text style={{ color: accent ? C.accent : C.light, fontFamily: F.medium, fontSize: 12 }}>{children}</Text></View>;
+export const Badge = ({ children, accent }) => <View style={{ alignSelf: 'flex-start', paddingHorizontal: 10, height: 26, justifyContent: 'center', borderRadius: R.pill, backgroundColor: accent ? 'rgba(163,184,217,0.12)' : 'rgba(163,158,149,0.10)' }}>
+  <Text style={{ color: accent ? C.accentFg : C.light, fontFamily: F.medium, fontSize: 12 }}>{children}</Text></View>;
 
 export const Bar = ({ v, max = 10, color }) => <View style={{ height: 6, borderRadius: R.pill, backgroundColor: C.track, overflow: 'hidden' }}>
   <View style={{ width: `${Math.max(0, Math.min(100, (v / max) * 100))}%`, height: 6, borderRadius: R.pill, backgroundColor: color || tone(v) }} /></View>;
@@ -85,12 +87,14 @@ export function Gauge({ v, size = 168 }) {
   </View>;
 }
 
+// The app icon keeps its original colours, independent of the UI palette.
+const ICON = { dark: '#2B1B5A', light: '#B9A7FF', accent: '#5EF2C2' };
 const FACETS = ['50,20 30,33 40,46', '50,20 40,46 60,46', '50,20 60,46 70,33', '30,33 28,56 40,46', '70,33 72,56 60,46', '28,56 40,46 50,62', '72,56 60,46 50,62', '28,56 50,62 50,80', '72,56 50,62 50,80'];
 export const Logo = ({ size = 32 }) => <Svg width={size} height={size} viewBox="0 0 100 100">
-  <Rect width="100" height="100" rx="22" fill={C.dark} />
-  <G fill={C.light} stroke={C.dark} strokeWidth="2.4" strokeLinejoin="round">
+  <Rect width="100" height="100" rx="22" fill={ICON.dark} />
+  <G fill={ICON.light} stroke={ICON.dark} strokeWidth="2.4" strokeLinejoin="round">
     {FACETS.map(p => <Polygon key={p} points={p} />)}
-    <Polygon points="40,46 60,46 50,62" fill={C.accent} />
+    <Polygon points="40,46 60,46 50,62" fill={ICON.accent} />
   </G>
 </Svg>;
 
@@ -100,9 +104,9 @@ export const Head = ({ title, sub, eyebrow, right }) => <View style={{ flexDirec
 </View>;
 export const Section = ({ title, right, children, style }) => <View style={[{ gap: 12, marginTop: 28 }, style]}>
   <Row><T k="h2" accessibilityRole="header">{title}</T>{right}</Row>{children}</View>;
-export const ErrorText = ({ children }) => <View accessibilityRole="alert" style={{ flexDirection: 'row', gap: 10, padding: 14, borderRadius: R.control, borderWidth: 1, borderColor: C.dangerLine, backgroundColor: 'rgba(255,163,181,0.06)' }}>
+export const ErrorText = ({ children }) => <View accessibilityRole="alert" style={{ flexDirection: 'row', gap: 10, padding: 14, borderRadius: R.control, borderWidth: 1, borderColor: C.dangerLine, backgroundColor: 'rgba(240,163,154,0.06)' }}>
   <AlertCircle size={18} color={C.danger} style={{ marginTop: 2 }} /><T style={{ flex: 1 }}>{children}</T></View>;
-export const Note = ({ children, icon: I = Info }) => <View style={{ flexDirection: 'row', gap: 10, padding: 14, borderRadius: R.control, backgroundColor: 'rgba(185,167,255,0.07)' }}>
+export const Note = ({ children, icon: I = Info }) => <View style={{ flexDirection: 'row', gap: 10, padding: 14, borderRadius: R.control, backgroundColor: 'rgba(163,158,149,0.07)' }}>
   <I size={18} color={C.light} style={{ marginTop: 2 }} /><T k="muted" style={{ flex: 1, fontSize: 14, lineHeight: 20 }}>{children}</T></View>;
 
 const LEGAL = {

@@ -41,7 +41,7 @@ export function Gauge({ v, size = 180 }) {
   useEffect(() => { const id = requestAnimationFrame(() => setShown(v)); return () => cancelAnimationFrame(id); }, [v]);
   return <div className="gauge" style={{ width: size, height: size }}>
     <svg width={size} height={size} viewBox="0 0 180 180" aria-hidden>
-      <circle cx="90" cy="90" r={r} fill="none" stroke="rgba(185,167,255,0.12)" strokeWidth="8" />
+      <circle cx="90" cy="90" r={r} fill="none" stroke="rgba(163,158,149,0.16)" strokeWidth="8" />
       <circle cx="90" cy="90" r={r} fill="none" stroke={`var(--tone-${tone(v)})`} strokeWidth="8" strokeLinecap="round"
         strokeDasharray={c} strokeDashoffset={c * (1 - shown / 10)} transform="rotate(-90 90 90)"
         style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.23,1,0.32,1)' }} />

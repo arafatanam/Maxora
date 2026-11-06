@@ -52,7 +52,7 @@ export default function Onboard({ done }) {
       <View style={{ borderTopWidth: 1, borderTopColor: C.line }}>
         {consent.map((label, i) => <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: i < 2 ? 1 : 0, borderBottomColor: C.line }}>
           <View style={{ flex: 1 }}>{label}</View>
-          <Switch value={ck[i]} onValueChange={() => toggle(i)} trackColor={{ false: C.card2, true: C.accent }} thumbColor="#fff" ios_backgroundColor={C.card2} accessibilityLabel={['Age confirmation', 'Terms agreement', 'Photo processing consent'][i]} />
+          <Switch value={ck[i]} onValueChange={() => toggle(i)} trackColor={{ false: C.card2, true: C.accentFg }} thumbColor="#fff" ios_backgroundColor={C.card2} accessibilityLabel={['Age confirmation', 'Terms agreement', 'Photo processing consent'][i]} />
         </View>)}
       </View>
       {!!err && <ErrorText>{err}</ErrorText>}
